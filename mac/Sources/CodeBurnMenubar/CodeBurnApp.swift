@@ -1423,9 +1423,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         let budgetLabel = budgetItems.map(\.accessibilityLabel).joined(separator: ", ")
         let secondRowLabel = secondRow.map { MenubarRowFormatter.accessibilityLabel(title: $0) }
         button.setAccessibilityLabel([budgetLabel, secondRowLabel].compactMap { $0 }.joined(separator: ", "))
-        button.toolTip = "Agent Spendbar · Monthly budget · " + budgetItems
-            .map { "\($0.label) \($0.percentage)" }
-            .joined(separator: " · ")
+        let budgetSummary = budgetItems.map { "\($0.label) \($0.percentage)" }.joined(separator: " · ")
+        button.toolTip = L("Agent Spendbar · Monthly budget · %@", budgetSummary)
 
         persistBadgeStatusFile()
     }
@@ -1653,11 +1652,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             menu.addItem(updateItem)
         }
 
-        let aboutItem = NSMenuItem(title: "About Agent Spendbar", action: #selector(openAbout), keyEquivalent: "")
+        let aboutItem = NSMenuItem(title: L("About Agent Spendbar"), action: #selector(openAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
 
-        let quitItem = NSMenuItem(title: "Quit Agent Spendbar", action: #selector(quitApp), keyEquivalent: "")
+        let quitItem = NSMenuItem(title: L("Quit Agent Spendbar"), action: #selector(quitApp), keyEquivalent: "")
         quitItem.target = self
         menu.addItem(quitItem)
 
@@ -1744,7 +1743,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             backing: .buffered,
             defer: false
         )
-        window.title = "Agent Spendbar Settings"
+        window.title = L("Agent Spendbar Settings")
         window.contentViewController = hosting
         window.isReleasedWhenClosed = false
         let savedFrame = window.setFrameUsingName(Self.settingsFrameAutosaveName) ? window.frame : nil

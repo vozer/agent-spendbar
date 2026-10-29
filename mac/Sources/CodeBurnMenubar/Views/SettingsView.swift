@@ -2304,7 +2304,7 @@ private struct AboutSettingsTab: View {
             } header: {
                 Text(L("Links"))
             } footer: {
-                Text("Agent Spendbar is a fork of CodeBurn by AgentSeal. MIT License.")
+                Text(L("Agent Spendbar is a fork of CodeBurn by AgentSeal. MIT License."))
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
             }
@@ -2328,11 +2328,11 @@ private struct AboutSettingsTab: View {
             }
 
             VStack(spacing: 2) {
-                Text("Agent Spendbar")
+                Text(L("Agent Spendbar"))
                     .font(.title3).fontWeight(.semibold)
                 Text(L("Version %@", versionString))
                     .foregroundStyle(.secondary)
-                Text("Monthly budgets at a glance")
+                Text(L("Monthly budgets at a glance"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

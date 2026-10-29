@@ -687,7 +687,7 @@ struct StarBanner: View {
                     NSWorkspace.shared.open(starBannerGitHubURL)
                 } label: {
                     HStack(spacing: 4) {
-                        Text("Enjoying Agent Spendbar?")
+                        Text(L("Enjoying Agent Spendbar?"))
                             .foregroundStyle(.primary)
                         Text(L("Star us on GitHub"))
                             .foregroundStyle(Theme.brandAccent)
