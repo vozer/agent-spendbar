@@ -191,8 +191,6 @@
 "Terminal (macOS default)" = "終端（macOS 預設）";
 
 /* MARK: Status-item menu, tooltip and update alerts */
-"%@ credits" = "%@ 點數";
-"CodeBurn %1$@ · %2$lld of %3$lld devices reporting" = "CodeBurn %1$@ · %2$lld/%3$lld 臺裝置已上報";
 "Settings…" = "設定…";
 "Capacity Dock Settings…" = "容量 Dock 設定…";
 "Refresh Now" = "立即重新整理";
@@ -625,10 +623,8 @@
 "Version %@" = "版本 %@";
 "%@ is available. Choose Check for Updates in the CodeBurn menu to install it." = "%@ 已釋出。在 CodeBurn 選單中選擇“檢查更新”即可安裝。";
 "GitHub" = "GitHub";
-"Website" = "網站";
 "Issues" = "問題反饋";
 "Links" = "連結";
-"© 2026 Resham Joshi (iamtoruk) · AgentSeal. MIT License." = "© 2026 Resham Joshi (iamtoruk) · AgentSeal. MIT 許可證。";
 
 /* MARK: Menubar second row (#1252) */
 "Second row" = "第二行";

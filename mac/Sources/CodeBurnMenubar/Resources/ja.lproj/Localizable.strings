@@ -191,8 +191,6 @@
 "Terminal (macOS default)" = "ターミナル（macOS標準）";
 
 /* MARK: Status-item menu, tooltip and update alerts */
-"%@ credits" = "%@ クレジット";
-"CodeBurn %1$@ · %2$lld of %3$lld devices reporting" = "CodeBurn %1$@ · %2$lld/%3$lld台のデバイスが報告中";
 "Settings…" = "設定…";
 "Capacity Dock Settings…" = "容量ドック設定…";
 "Refresh Now" = "今すぐ更新";
@@ -628,10 +626,8 @@
 "Version %@" = "バージョン %@";
 "%@ is available. Choose Check for Updates in the CodeBurn menu to install it." = "%@が利用可能です。CodeBurnメニューの「更新を確認」からインストールしてください。";
 "GitHub" = "GitHub";
-"Website" = "ウェブサイト";
 "Issues" = "問題を報告";
 "Links" = "リンク";
-"© 2026 Resham Joshi (iamtoruk) · AgentSeal. MIT License." = "© 2026 Resham Joshi (iamtoruk) · AgentSeal. MITライセンス。";
 
 /* MARK: Menubar second row (#1252) */
 "Second row" = "2行目";

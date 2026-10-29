@@ -191,8 +191,6 @@
 "Terminal (macOS default)" = "터미널 (macOS 기본)";
 
 /* MARK: Status-item menu, tooltip and update alerts */
-"%@ credits" = "%@ 크레딧";
-"CodeBurn %1$@ · %2$lld of %3$lld devices reporting" = "CodeBurn %1$@ · %3$lld대 중 %2$lld대 기기 보고 중";
 "Settings…" = "설정…";
 "Capacity Dock Settings…" = "캐퍼시티 독 설정…";
 "Refresh Now" = "지금 새로고침";
@@ -628,10 +626,8 @@
 "Version %@" = "버전 %@";
 "%@ is available. Choose Check for Updates in the CodeBurn menu to install it." = "%@ 버전이 나왔습니다. CodeBurn 메뉴에서 “업데이트 확인”을 선택해 설치하세요.";
 "GitHub" = "GitHub";
-"Website" = "웹사이트";
 "Issues" = "이슈";
 "Links" = "링크";
-"© 2026 Resham Joshi (iamtoruk) · AgentSeal. MIT License." = "© 2026 Resham Joshi (iamtoruk) · AgentSeal. MIT 라이선스.";
 
 /* MARK: Menubar second row (#1252) */
 "Second row" = "두 번째 줄";

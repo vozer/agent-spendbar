@@ -198,8 +198,6 @@
 "Terminal (macOS default)" = "Terminal (macOS default)";
 
 /* MARK: Status-item menu, tooltip and update alerts */
-"%@ credits" = "%@ credits";
-"CodeBurn %1$@ · %2$lld of %3$lld devices reporting" = "CodeBurn %1$@ · %2$lld of %3$lld devices reporting";
 "Settings…" = "Settings…";
 "Capacity Dock Settings…" = "Capacity Dock Settings…";
 "Refresh Now" = "Refresh Now";
@@ -635,10 +633,8 @@
 "Version %@" = "Version %@";
 "%@ is available. Choose Check for Updates in the CodeBurn menu to install it." = "%@ is available. Choose Check for Updates in the CodeBurn menu to install it.";
 "GitHub" = "GitHub";
-"Website" = "Website";
 "Issues" = "Issues";
 "Links" = "Links";
-"© 2026 Resham Joshi (iamtoruk) · AgentSeal. MIT License." = "© 2026 Resham Joshi (iamtoruk) · AgentSeal. MIT License.";
 
 /* MARK: Menubar second row (#1252) */
 "Second row" = "Second row";
