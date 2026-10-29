@@ -2,6 +2,10 @@
 
 ## macOS
 
+This fork builds Agent Spendbar with its own app identity. The `codeburn menubar` command still installs the upstream CodeBurn app. Until this fork has signed releases, run Agent Spendbar from source as described in [`mac/README.md`](../mac/README.md).
+
+Agent Spendbar shows one icon and monthly percentage for Codex, Claude Code, and Cursor. It reads Codex Spend's saved credit budget, compares Claude's local cost estimate with `$100`, and combines Cursor and Cursor Agent usage against `$100`. Cursor export costs are used when available; estimates show `~`. Missing, stale, or incomplete amounts show `—`.
+
 ```bash
 codeburn menubar
 ```

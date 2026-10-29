@@ -1732,10 +1732,13 @@ export async function buildMenubarPayloadForRange(periodInfo: PeriodInfo, opts: 
   // already includes reasoning for codex, keeps non-cached input + cached-read
   // separate) so the figure matches the official credit rates.
   const modelRows = await aggregateModels(scanProjects)
+  const codexModelRows = modelRows.filter(r => r.provider === 'codex')
   currentData.codexCredits = modelRows.reduce(
     (sum, r) => sum + (r.provider === 'codex' && r.credits != null ? r.credits : 0),
     0,
   )
+  currentData.codexCreditsIncomplete = codexModelRows.some(r => r.credits == null || r.creditsIncomplete === true)
+  currentData.codexCreditsEstimated = codexModelRows.some(r => r.creditsEstimated === true)
 
   // PROVIDERS
   // For .all: enumerate every provider with usage across the period (from cache) + installed-but-idle.

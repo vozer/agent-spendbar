@@ -516,11 +516,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             let activity = ProcessInfo.processInfo.beginActivity(
                 options: .background, reason: "CodeBurn status refresh")
             defer { ProcessInfo.processInfo.endActivity(activity) }
-            let succeeded = await self.store.refreshQuietly(
+            async let statusPayload = self.store.refreshQuietly(
                 period: menubarPeriod,
                 force: true,
                 qualityOfService: qualityOfService
             )
+            async let spendbarPayload = self.store.refreshSpendbarBudget(
+                force: true,
+                qualityOfService: qualityOfService
+            )
+            let (succeeded, _) = await (statusPayload, spendbarPayload)
             if succeeded {
                 self.recordSuccessfulUsageDataSnapshot()
             }
@@ -595,10 +600,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
                 force: force,
                 qualityOfService: qualityOfService
             )
+            async let spendbar = store.refreshSpendbarBudget(force: force, qualityOfService: qualityOfService)
             async let today = menubarPeriod != .today
                 ? store.refreshQuietly(period: .today, force: force, qualityOfService: qualityOfService)
                 : true
-            let (menubarSucceeded, todaySucceeded) = await (menubar, today)
+            let (menubarSucceeded, todaySucceeded, _) = await (menubar, today, spendbar)
             return menubarSucceeded && todaySucceeded
         }
 
@@ -617,7 +623,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         async let today = needsTodayPayload
             ? store.refreshQuietly(period: .today, force: force, qualityOfService: qualityOfService)
             : true
-        let (visibleSucceeded, menubarSucceeded, todaySucceeded) = await (visible, menubar, today)
+        async let spendbar = store.refreshSpendbarBudget(force: force, qualityOfService: qualityOfService)
+        let (visibleSucceeded, menubarSucceeded, todaySucceeded, _) = await (visible, menubar, today, spendbar)
         return visibleSucceeded && menubarSucceeded && todaySucceeded
     }
 
@@ -906,7 +913,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
 
     private func startNapBackstop() {
         let scheduler = NSBackgroundActivityScheduler(
-            identifier: "org.agentseal.codeburn-menubar.refresh-backstop")
+            identifier: "io.github.vozer.agent-spendbar.refresh-backstop")
         scheduler.repeats = true
         scheduler.interval = 180
         scheduler.tolerance = 60
@@ -1100,26 +1107,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             _ = self.store.payload
             _ = self.store.menubarPeriod
             _ = self.store.menubarPayload
+            _ = self.store.spendbarBudgetPayload
             // Combined-scope badge total: re-render the badge when the cross-device
             // aggregate for the menubar period lands (or a peer goes reachable).
             _ = self.store.menubarBadgeCombined
             // Track currency so the menubar title catches up immediately on
             // currency switch instead of waiting for the next 30s payload tick.
             _ = self.store.currency
-            _ = self.store.displayMetric
             // Second-row settings: the title has to re-render the moment the
             // toggle or its metric changes, not on the next payload tick.
             _ = self.store.menubarSecondRowEnabled
             _ = self.store.menubarSecondRowMetric
             _ = self.store.dailyBudget
             _ = self.store.dailyTokenBudget
-            // Read the derived flag so the flame re-tints when today's usage
-            // crosses the budget, not only when the budget value itself changes.
-            // This also makes the dependency on todayPayload explicit instead of
-            // relying on payload/menubarPayload happening to touch the same cache.
-            _ = self.store.isOverDailyBudget
-            // Track the live-quota state too so the flame icon re-tints on
-            // every connected provider's usage update, not just every 30s.
+            // Track live quota state so the optional detail row updates immediately.
             _ = self.store.subscription
             _ = self.store.subscriptionLoadState
             _ = self.store.codexUsage
@@ -1163,10 +1164,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
 
     // MARK: - Status Item
 
-    private var isCompact: Bool {
-        UserDefaults.standard.bool(forKey: "CodeBurnMenubarCompact")
-    }
-
     private func setupStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: statusItemWidth)
         item.autosaveName = StatusItemPlacementPolicy.autosaveName
@@ -1183,7 +1180,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         // Set the bundled flame image immediately to ensure the status item renders.
         // On macOS Tahoe, status items may fail to appear if only an attributed title
         // is set during initial setup.
-        button.image = Self.menubarFlameImage(tint: nil)
+        button.image = Self.menubarFlameImage()
         button.imagePosition = .imageLeading
 
         button.target = self
@@ -1356,82 +1353,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         return parked ? .parked(screen) : .healthy
     }
 
-    /// Composes the menubar title as a single attributed string with the flame as an inline
-    /// NSTextAttachment. NSStatusItem's separate `image` + `attributedTitle` path leaves a
-    /// stubborn gap between icon and text on some macOS releases (the icon hugs the left edge
-    /// of the status item, the title starts at its own baseline), so we inline both so they
-    /// flow as one typographic unit with a single, controllable gap.
-    private static func flameTint(for severity: QuotaSummary.Severity) -> NSColor? {
-        switch severity {
-        case .normal:   return nil                              // template, auto-adapt
-        case .warning:  return NSColor.systemYellow            // 70-90%
-        case .critical: return NSColor.systemOrange            // 90-100%
-        case .danger:   return NSColor.systemRed               // 100%+
-        }
-    }
-
-    /// Loads the menubar flame at the menubar text point size. With no tint it stays a
-    /// template image so the system auto-adapts to the menu bar; a tint returns a
-    /// recolored non-template copy for the budget/quota warning states.
-    private static func menubarFlameImage(
-        tint: NSColor?,
-        pointSize: CGFloat = menubarTitleFontSize
-    ) -> NSImage? {
+    /// A temporary icon keeps the status item visible until its budget title renders.
+    private static func menubarFlameImage(pointSize: CGFloat = menubarTitleFontSize) -> NSImage? {
         let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .medium)
-        guard let symbol = NSImage(systemSymbolName: "flame.fill", accessibilityDescription: "CodeBurn")?
+        guard let symbol = NSImage(systemSymbolName: "flame.fill", accessibilityDescription: "Agent Spendbar")?
             .withSymbolConfiguration(config) else { return nil }
-        guard let tint else {
-            symbol.isTemplate = true
-            return symbol
-        }
-        let recolored = NSImage(size: symbol.size, flipped: false) { rect in
-            symbol.draw(in: rect)
-            tint.set()
-            rect.fill(using: .sourceAtop)
-            return true
-        }
-        recolored.isTemplate = false
-        return recolored
+        symbol.isTemplate = true
+        return symbol
     }
 
-    /// Typography for one rendering of the status-item title. `singleRow` holds
-    /// the historical constants, so the off state of the second-row setting
-    /// produces exactly the string this app has always rendered.
+    /// Typography for the one-row or two-row status-item title.
     private struct MenubarTitleStyle {
         let fontSize: CGFloat
         let attachmentPointSize: CGFloat
         let baselineOffset: CGFloat
         let attachmentVerticalOffset: CGFloat
-        /// Two rows only. The single row has the whole menu bar to itself, so its
-        /// flame keeps the image size the system hands back, exactly as before.
-        let clampsAttachmentToLineHeight: Bool
 
         static let singleRow = MenubarTitleStyle(
             fontSize: menubarTitleFontSize,
             attachmentPointSize: menubarTitleFontSize,
             baselineOffset: -1.0,
-            attachmentVerticalOffset: -3,
-            clampsAttachmentToLineHeight: false
+            attachmentVerticalOffset: -3
         )
         static let twoRow = MenubarTitleStyle(
             fontSize: MenubarRowTypography.twoRowFontSize,
             attachmentPointSize: MenubarRowTypography.twoRowAttachmentPointSize,
             baselineOffset: MenubarRowTypography.twoRowBaselineOffset,
-            attachmentVerticalOffset: MenubarRowTypography.twoRowAttachmentVerticalOffset,
-            clampsAttachmentToLineHeight: true
+            attachmentVerticalOffset: MenubarRowTypography.twoRowAttachmentVerticalOffset
         )
-
-        func attachmentBounds(imageSize: CGSize) -> CGRect {
-            guard clampsAttachmentToLineHeight else {
-                return CGRect(
-                    x: 0,
-                    y: attachmentVerticalOffset,
-                    width: imageSize.width,
-                    height: imageSize.height
-                )
-            }
-            return MenubarRowTypography.twoRowAttachmentBounds(imageSize: imageSize)
-        }
     }
 
     /// The button cell's single-line state as AppKit handed it to us, captured
@@ -1463,31 +1412,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         let secondRow = rowSettings.isSecondRowEnabled
             ? MenubarRowFormatter.secondRow(settings: rowSettings, snapshot: store.menubarRowSnapshot)
             : nil
+        let budgetItems = monthlyBudgetItems()
         applyTitleLineMode(to: button, multiline: secondRow != nil)
         let title = composeStatusTitle(
             style: secondRow == nil ? .singleRow : .twoRow,
+            budgetItems: budgetItems,
             secondRow: secondRow
         )
         button.attributedTitle = title
-        // The two-line title is one string with a literal newline in it, which
-        // VoiceOver reads as a single run-on phrase. Spell it out instead. The
-        // single-row state sets nil, so turning the row off restores exactly the
-        // label AppKit derives from the title on its own.
-        button.setAccessibilityLabel(
-            secondRow == nil ? nil : MenubarRowFormatter.accessibilityLabel(title: title.string)
-        )
-
-        let menubarPeriod = store.menubarPeriod
-        if let shortfall = store.menubarBadgeDeviceShortfall {
-            button.toolTip = L(
-                "CodeBurn %1$@ · %2$lld of %3$lld devices reporting",
-                menubarPeriod.menubarMetricLabel,
-                shortfall.reachable,
-                shortfall.total
-            )
-        } else {
-            button.toolTip = "CodeBurn \(menubarPeriod.menubarMetricLabel)"
-        }
+        let budgetLabel = budgetItems.map(\.accessibilityLabel).joined(separator: ", ")
+        let secondRowLabel = secondRow.map { MenubarRowFormatter.accessibilityLabel(title: $0) }
+        button.setAccessibilityLabel([budgetLabel, secondRowLabel].compactMap { $0 }.joined(separator: ", "))
+        button.toolTip = "Agent Spendbar · Monthly budget · " + budgetItems
+            .map { "\($0.label) \($0.percentage)" }
+            .joined(separator: " · ")
 
         persistBadgeStatusFile()
     }
@@ -1510,87 +1448,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         }
     }
 
-    /// Composes the status-item title. With `secondRow` nil this is the original
-    /// single-row string, byte for byte; with a second row it renders the same
-    /// first line at the two-row point size and appends the extra line under a
-    /// paragraph style that clamps both lines into the menu bar's height.
+    /// Composes the three monthly provider budgets, then keeps the optional detail row.
     private func composeStatusTitle(
         style: MenubarTitleStyle,
+        budgetItems: [MenubarBudgetItem],
         secondRow: String?
     ) -> NSAttributedString {
         let font = NSFont.monospacedDigitSystemFont(ofSize: style.fontSize, weight: .regular)
-        // Tint the flame based on the worst-affected connected provider's quota.
-        // Normal (<70%) keeps the template (auto white-on-dark / black-on-light);
-        // warning/critical/danger override with a fixed palette color so the
-        // user gets a glanceable signal even when the menu bar is busy.
-        let aggregate = store.aggregateQuotaStatus
-        var tint = Self.flameTint(for: aggregate.severity)
-        if tint == nil, store.isOverDailyBudget {
-            tint = NSColor.systemYellow
-        }
-        let flame = Self.menubarFlameImage(tint: tint, pointSize: style.attachmentPointSize)
-
-        let attachment = NSTextAttachment()
-        attachment.image = flame
-        if let size = flame?.size {
-            attachment.bounds = style.attachmentBounds(imageSize: size)
-        }
-
-        let menubarPeriod = store.menubarPeriod
-        let menubarPayload = badgePayload()
-        let hasPayload = menubarPayload != nil
-        let compact = isCompact
-
         let composed = NSMutableAttributedString()
-        composed.append(NSAttributedString(attachment: attachment))
-
-        if store.displayMetric != .iconOnly {
-            let suffix = menubarPeriod.menubarSuffix(compact: compact)
-            // Under combined scope the badge shows the cross-device aggregate, so
-            // it matches the popover hero instead of trailing it with the local
-            // figure. Falls back to local when no combined payload is available
-            // (local scope, cold cache, or an unreachable peer). Credits have no
-            // combined total, so that metric always reflects the local device.
-            let badgeCombined = store.menubarBadgeCombined
-            let cost: Double? = badgeCombined?.cost ?? menubarPayload?.current.cost
-            let outputTokens: Int? = badgeCombined?.outputTokens ?? menubarPayload?.current.outputTokens
-            let inputTokens: Int? = badgeCombined?.inputTokens ?? menubarPayload?.current.inputTokens
-            let valueText: String
-            if store.displayMetric == .tokens, let out = outputTokens, let inp = inputTokens {
-                let outText = formatTokensMenubar(Double(out))
-                let inpText = formatTokensMenubar(Double(inp))
-                valueText = compact ? "↑\(outText)↓\(inpText)\(suffix)" : " ↑\(outText) ↓\(inpText)\(suffix)"
-            } else if store.displayMetric == .totalTokens, let out = outputTokens, let inp = inputTokens {
-                let total = formatTokensMenubar(Double(inp + out))
-                valueText = compact ? "\(total)\(suffix)" : " \(total)\(suffix)"
-            } else if store.displayMetric == .credits, let p = menubarPayload?.current {
-                let credits = formatTokensMenubar((p.codexCredits ?? 0).rounded())
-                valueText = compact ? "\(credits)cr\(suffix)" : " " + L("%@ credits", credits) + suffix
-            } else {
-                let fallback = compact ? "$-" : "$—"
-                valueText = compact
-                    ? (cost?.asCompactCurrencyWhole() ?? fallback) + suffix
-                    : " " + (cost?.asCompactCurrency() ?? fallback) + suffix
+        let textAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .baselineOffset: style.baselineOffset,
+        ]
+        for (index, item) in budgetItems.enumerated() {
+            if index > 0 {
+                composed.append(NSAttributedString(string: "  ", attributes: textAttributes))
             }
 
-            var textAttrs: [NSAttributedString.Key: Any] = [.font: font, .baselineOffset: style.baselineOffset]
-            if !hasPayload {
-                textAttrs[.foregroundColor] = NSColor.secondaryLabelColor
-            }
-            composed.append(NSAttributedString(string: valueText, attributes: textAttrs))
-
-            // Combined scope, but a paired device didn't report this cycle: append
-            // a dimmed "reachable/total" so the reduced total reads as "peer
-            // unreachable" rather than a glitch (mirrors the popover's device list).
-            if let shortfall = store.menubarBadgeDeviceShortfall {
-                let marker = " · \(shortfall.reachable)/\(shortfall.total)"
-                let markerAttrs: [NSAttributedString.Key: Any] = [
-                    .font: font,
-                    .baselineOffset: style.baselineOffset,
-                    .foregroundColor: NSColor.secondaryLabelColor,
-                ]
-                composed.append(NSAttributedString(string: marker, attributes: markerAttrs))
-            }
+            let attachment = NSTextAttachment()
+            attachment.image = ProviderIconCache.image(named: item.id)
+            let iconSize = min(style.fontSize - 1, style.attachmentPointSize)
+            attachment.bounds = CGRect(
+                x: 0,
+                y: style.attachmentVerticalOffset,
+                width: iconSize,
+                height: iconSize
+            )
+            composed.append(NSAttributedString(attachment: attachment))
+            composed.append(NSAttributedString(string: " \(item.percentage)", attributes: textAttributes))
         }
 
         guard let secondRow else { return composed }
@@ -1620,6 +1505,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         return composed
     }
 
+    private func monthlyBudgetItems() -> [MenubarBudgetItem] {
+        let payload = store.spendbarBudgetPayload
+        return MenubarBudgetStatus.items(
+            current: payload?.current,
+            codexBudget: MenubarBudgetStatus.codexBudget(),
+            unavailable: payload == nil || payload?.stale == true || payload?.hydration?.complete == false
+        )
+    }
+
     private var lastWrittenBadgeGenerated: String?
 
     // Mirror the freshest in-memory payload to disk so the badge survives an app
@@ -1638,30 +1532,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         } catch {
             NSLog("CodeBurn: failed to write badge status file: \(error)")
         }
-    }
-
-    // Badge falls back to the on-disk status file (written by a prior app run)
-    // when the in-app loop has no payload yet; in-memory wins when it's fresher.
-    // The 10-min bound discards a file too stale to trust.
-    private func badgePayload() -> MenubarPayload? {
-        let inMemory = store.menubarPayload
-        // While scoped to a config, never fall back to the on-disk badge: it
-        // holds the unscoped All payload and would show the wrong number.
-        if store.selectedClaudeConfigSourceId != nil { return inMemory }
-        let inMemoryAge = store.menubarPayloadAgeSeconds.map(TimeInterval.init)
-        guard let fileRead = MenubarStatusCache.standard().readBadgePayload(maxAgeSeconds: 600) else {
-            return inMemory
-        }
-        if inMemory == nil { return fileRead.payload }
-        if let age = inMemoryAge, fileRead.ageSeconds < age { return fileRead.payload }
-        return inMemory
-    }
-
-    private func formatTokensMenubar(_ n: Double) -> String {
-        if n >= 1_000_000_000 { return String(format: "%.1fB", n / 1_000_000_000) }
-        if n >= 1_000_000 { return String(format: "%.1fM", n / 1_000_000) }
-        if n >= 1_000 { return String(format: "%.0fK", n / 1_000) }
-        return String(format: "%.0f", n)
     }
 
     // MARK: - Popover
@@ -1777,15 +1647,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         refreshNow.target = self
         menu.addItem(refreshNow)
 
-        let updateItem = NSMenuItem(title: L("Check for Updates"), action: #selector(checkForUpdates), keyEquivalent: "")
-        updateItem.target = self
-        menu.addItem(updateItem)
+        if updateChecker.supportsAutomaticUpdates {
+            let updateItem = NSMenuItem(title: L("Check for Updates"), action: #selector(checkForUpdates), keyEquivalent: "")
+            updateItem.target = self
+            menu.addItem(updateItem)
+        }
 
-        let aboutItem = NSMenuItem(title: L("About CodeBurn"), action: #selector(openAbout), keyEquivalent: "")
+        let aboutItem = NSMenuItem(title: "About Agent Spendbar", action: #selector(openAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
 
-        let quitItem = NSMenuItem(title: L("Quit CodeBurn"), action: #selector(quitApp), keyEquivalent: "")
+        let quitItem = NSMenuItem(title: "Quit Agent Spendbar", action: #selector(quitApp), keyEquivalent: "")
         quitItem.target = self
         menu.addItem(quitItem)
 
@@ -1872,7 +1744,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             backing: .buffered,
             defer: false
         )
-        window.title = L("CodeBurn Settings")
+        window.title = "Agent Spendbar Settings"
         window.contentViewController = hosting
         window.isReleasedWhenClosed = false
         let savedFrame = window.setFrameUsingName(Self.settingsFrameAutosaveName) ? window.frame : nil
@@ -1893,7 +1765,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         }
     }
 
-    private static let settingsFrameAutosaveName = "CodeBurnMenubar.SettingsWindow"
+    private static let settingsFrameAutosaveName = "AgentSpendbar.SettingsWindow"
 
     private func placeSettingsWindow(_ window: NSWindow, savedFrame: NSRect?) {
         // The popover's screen is the one the user is looking at.

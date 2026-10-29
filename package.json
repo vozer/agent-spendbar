@@ -55,12 +55,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/getagentseal/codeburn.git"
+    "url": "git+https://github.com/vozer/agent-spendbar.git"
   },
   "bugs": {
-    "url": "https://github.com/getagentseal/codeburn/issues"
+    "url": "https://github.com/vozer/agent-spendbar/issues"
   },
-  "homepage": "https://github.com/getagentseal/codeburn#readme",
+  "homepage": "https://github.com/vozer/agent-spendbar#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "bonjour-service": "^1.4.1",

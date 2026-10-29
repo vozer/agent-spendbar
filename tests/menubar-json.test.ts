@@ -20,6 +20,19 @@ function emptyPeriod(label: string): PeriodData {
 }
 
 describe('buildMenubarPayload', () => {
+  it('carries Codex credit completeness and Fast-mode estimate flags', () => {
+    const payload = buildMenubarPayload({
+      ...emptyPeriod('Month'),
+      codexCredits: 125,
+      codexCreditsIncomplete: true,
+      codexCreditsEstimated: true,
+    }, [], null)
+
+    expect(payload.current.codexCredits).toBe(125)
+    expect(payload.current.codexCreditsIncomplete).toBe(true)
+    expect(payload.current.codexCreditsEstimated).toBe(true)
+  })
+
   it('emits the full schema with current-period metrics and iso timestamp', () => {    const period: PeriodData = {
       label: '7 Days',
       cost: 1248.01,

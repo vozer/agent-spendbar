@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds a universal CodeBurnMenubar.app bundle from the SwiftPM target and drops a
+# Builds a universal AgentSpendbar.app bundle from the SwiftPM target and drops a
 # distributable zip alongside. Used by the GitHub release workflow; also runnable locally.
 #
 # Usage:
@@ -15,9 +15,10 @@ set -euo pipefail
 VERSION="${1:-dev}"
 ASSET_VERSION="${VERSION#mac-}"
 BUNDLE_VERSION="${ASSET_VERSION#v}"
-BUNDLE_NAME="CodeBurnMenubar.app"
-BUNDLE_ID="org.agentseal.codeburn-menubar"
-EXECUTABLE_NAME="CodeBurnMenubar"
+BUNDLE_NAME="AgentSpendbar.app"
+BUNDLE_ID="io.github.vozer.agent-spendbar"
+EXECUTABLE_NAME="AgentSpendbarMenubar"
+RESOURCE_BUNDLE_NAME="CodeBurnMenubar_CodeBurnMenubar.bundle"
 MIN_MACOS="14.0"
 
 repo_root() {
@@ -56,7 +57,7 @@ cp "${ROOT}/THIRD_PARTY_NOTICES.md" "${BUNDLE}/Contents/Resources/THIRD_PARTY_NO
 
 # SwiftPM emits target resources as a sibling bundle; Bundle.module traps at
 # runtime if it is missing from Contents/Resources, so ship it when present.
-SPM_RESOURCE_BUNDLE="${BIN_PATH}/${EXECUTABLE_NAME}_${EXECUTABLE_NAME}.bundle"
+SPM_RESOURCE_BUNDLE="${BIN_PATH}/${RESOURCE_BUNDLE_NAME}"
 if [[ -d "${SPM_RESOURCE_BUNDLE}" ]]; then
   cp -R "${SPM_RESOURCE_BUNDLE}" "${BUNDLE}/Contents/Resources/"
 fi
@@ -98,7 +99,7 @@ cat > "${BUNDLE}/Contents/Info.plist" <<PLIST
         <string>zh-Hant</string>
     </array>
     <key>CFBundleDisplayName</key>
-    <string>CodeBurn Menubar</string>
+    <string>Agent Spendbar</string>
     <key>CFBundleExecutable</key>
     <string>${EXECUTABLE_NAME}</string>
     <key>CFBundleIconFile</key>
@@ -192,7 +193,7 @@ if [[ -n "${NOTARY_KEY_PATH:-}" ]]; then
   spctl --assess --type execute -vv "${BUNDLE}"
 fi
 
-ZIP_NAME="CodeBurnMenubar-${ASSET_VERSION}.zip"
+ZIP_NAME="AgentSpendbar-${ASSET_VERSION}.zip"
 ZIP_PATH="${DIST_DIR}/${ZIP_NAME}"
 echo "▸ Packaging ${ZIP_NAME}..."
 (cd "${DIST_DIR}" && COPYFILE_DISABLE=1 /usr/bin/ditto -c -k --norsrc --keepParent "${BUNDLE_NAME}" "${ZIP_NAME}")

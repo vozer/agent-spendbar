@@ -448,11 +448,11 @@ struct MenubarSecondRowTests {
 
     @Test("the two-line title reads as one phrase, without the raw newline")
     func accessibilityLabelForTwoRows() {
-        // The composed title as the status item holds it: the flame attachment's
+        // The composed title as the status item holds it: the provider attachment's
         // placeholder character, the badge, a newline, then the second row.
         let title = "\u{FFFC} $12.34\nClaude 42% left · 3h 12m"
         let label = MenubarRowFormatter.accessibilityLabel(title: title)
-        #expect(label == "CodeBurn, $12.34, Claude 42% left, 3h 12m")
+        #expect(label == "$12.34, Claude 42% left, 3h 12m")
         #expect(!label.contains("\n"))
         #expect(!label.contains("·"))
         #expect(!label.contains("\u{FFFC}"))
@@ -460,7 +460,7 @@ struct MenubarSecondRowTests {
 
     @Test("an icon-only badge still names the second row")
     func accessibilityLabelIconOnly() {
-        #expect(MenubarRowFormatter.accessibilityLabel(title: "\u{FFFC}\n12 sess") == "CodeBurn, 12 sess")
+        #expect(MenubarRowFormatter.accessibilityLabel(title: "\u{FFFC}\n12 sess") == "12 sess")
     }
 
     // MARK: - Preferences

@@ -331,6 +331,10 @@ final class AppStore {
         PayloadCacheKey(scope: .local, period: menubarPeriod, provider: .all, day: nil, claudeConfigSourceId: selectedClaudeConfigSourceId)
     }
 
+    private var spendbarBudgetKey: PayloadCacheKey {
+        PayloadCacheKey(scope: .local, period: .month, provider: .all, day: nil, claudeConfigSourceId: selectedClaudeConfigSourceId)
+    }
+
     private var currentKey: PayloadCacheKey {
         PayloadCacheKey(
             scope: effectiveSelectedScope,
@@ -425,6 +429,10 @@ final class AppStore {
         cache[menubarStatusKey]?.payload
     }
 
+    var spendbarBudgetPayload: MenubarPayload? {
+        cache[spendbarBudgetKey]?.payload
+    }
+
     private var menubarCombinedKey: PayloadCacheKey {
         PayloadCacheKey(scope: .combined, period: menubarPeriod, provider: .all, day: nil, claudeConfigSourceId: selectedClaudeConfigSourceId)
     }
@@ -466,6 +474,16 @@ final class AppStore {
         )
         let (localSucceeded, _) = await (local, combined)
         return localSucceeded
+    }
+
+    @discardableResult
+    func refreshSpendbarBudget(force: Bool = false, qualityOfService: QualityOfService = .userInitiated) async -> Bool {
+        await refreshQuietly(
+            key: spendbarBudgetKey,
+            includeOptimize: false,
+            force: force,
+            qualityOfService: qualityOfService
+        )
     }
 
     /// All-provider payload for the selected period. Used by the tab strip to show

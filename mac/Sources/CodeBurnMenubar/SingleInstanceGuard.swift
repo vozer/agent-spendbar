@@ -28,7 +28,7 @@ import AppKit
 /// the command line opts a single launch out of the guard, for the one case
 /// where running two on purpose is the point.
 enum SingleInstanceGuard {
-    /// Opt out for one launch: `open -n CodeBurnMenubar.app --args --keep-both`.
+    /// Opt out for one launch: `open -n AgentSpendbar.app --args --keep-both`.
     static let keepBothFlag = "--keep-both"
 
     /// Grace period before an instance that ignored `terminate()` is killed.

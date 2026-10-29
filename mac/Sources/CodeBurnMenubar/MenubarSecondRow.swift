@@ -305,7 +305,7 @@ enum MenubarRowFormatter {
         abbreviate(row, to: secondRowCharacterBudget)
     }
 
-    /// What VoiceOver reads for the status item once the second row is on.
+    /// Converts a rendered row into a comma-separated VoiceOver phrase.
     ///
     /// The rendered title is one attributed string carrying a literal newline
     /// between the rows, and the row separator is a middle dot; read verbatim
@@ -314,13 +314,13 @@ enum MenubarRowFormatter {
     /// cannot drift from what is on screen.
     static func accessibilityLabel(title: String) -> String {
         let parts = title
-            // U+FFFC is the inline flame attachment's placeholder character.
+            // U+FFFC is the inline provider-icon attachment's placeholder character.
             .replacingOccurrences(of: "\u{FFFC}", with: " ")
             .split(whereSeparator: \.isNewline)
             .flatMap { $0.split(separator: "·") }
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
-        return (["CodeBurn"] + parts).joined(separator: ", ")
+        return parts.joined(separator: ", ")
     }
 
     /// Same shape as the popover's quota rows (`QuotaSummary.Window.resetsInLabel`),
@@ -373,7 +373,7 @@ enum MenubarRowTypography {
     static let twoRowLineHeight: CGFloat = 10
     static let standardMenuBarThickness: CGFloat = 22
     static let twoRowBaselineOffset: CGFloat = 0
-    /// Asks for a flame around the clamped line height; `twoRowAttachmentBounds`
+    /// Asks for an icon around the clamped line height; `twoRowAttachmentBounds`
     /// is what guarantees it, since the rendered image size for a point size is
     /// the system's business and has changed between releases.
     static let twoRowAttachmentPointSize: CGFloat = 8

@@ -7,7 +7,7 @@ import AppKit
 /// three signals — legacy 22pt height, flush with the display's right edge,
 /// and parked in the top menu-bar band.
 enum StatusItemPlacementPolicy {
-    static let autosaveName: NSStatusItem.AutosaveName = "CodeBurnMenubar.MainStatusItem"
+    static let autosaveName: NSStatusItem.AutosaveName = "AgentSpendbar.MainStatusItem"
 
     static func isParked(
         itemFrame: CGRect,

@@ -16,7 +16,7 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        .executable(name: "CodeBurnMenubar", targets: ["CodeBurnMenubar"])
+        .executable(name: "AgentSpendbarMenubar", targets: ["CodeBurnMenubar"])
     ],
     targets: [
         .executableTarget(

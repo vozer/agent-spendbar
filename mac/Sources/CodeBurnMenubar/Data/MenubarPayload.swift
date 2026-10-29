@@ -9,6 +9,9 @@ struct MenubarPayload: Codable, Sendable {
     /// absence must be read as "assume fresh," including for payloads from
     /// a CLI version that predates this field.
     let stale: Bool?
+    /// Progress for a resident CLI parse. An incomplete parse cannot support a
+    /// reliable monthly total, so the menu bar shows dashes until it completes.
+    var hydration: PayloadHydration? = nil
     let current: CurrentBlock
     let optimize: OptimizeBlock
     let history: HistoryBlock
@@ -33,10 +36,12 @@ struct MenubarPayload: Codable, Sendable {
          combined: CombinedUsage?,
          claudeConfigs: ClaudeConfigSelector? = nil,
          stale: Bool? = nil,
+         hydration: PayloadHydration? = nil,
          liveSessions: LiveSessionsBlock? = nil,
          telemetrySnapshot: JSONValue? = nil,
          cursorSync: CursorSyncStatus? = nil) {
         self.cursorSync = cursorSync
+        self.hydration = hydration
         self.liveSessions = liveSessions
         self.telemetrySnapshot = telemetrySnapshot
         self.generated = generated
@@ -49,7 +54,7 @@ struct MenubarPayload: Codable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case generated, stale, current, optimize, history, combined, claudeConfigs, liveSessions
+        case generated, stale, hydration, current, optimize, history, combined, claudeConfigs, liveSessions
         case telemetrySnapshot, cursorSync
     }
 
@@ -57,6 +62,7 @@ struct MenubarPayload: Codable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         generated = try c.decode(String.self, forKey: .generated)
         stale = try c.decodeIfPresent(Bool.self, forKey: .stale)
+        hydration = try? c.decodeIfPresent(PayloadHydration.self, forKey: .hydration)
         current = try c.decode(CurrentBlock.self, forKey: .current)
         optimize = try c.decode(OptimizeBlock.self, forKey: .optimize)
         history = try c.decode(HistoryBlock.self, forKey: .history)
@@ -67,6 +73,10 @@ struct MenubarPayload: Codable, Sendable {
         // A status line must never cost the whole payload.
         cursorSync = try? c.decodeIfPresent(CursorSyncStatus.self, forKey: .cursorSync)
     }
+}
+
+struct PayloadHydration: Codable, Sendable {
+    let complete: Bool
 }
 
 struct CursorSyncStatus: Codable, Sendable, Equatable {
@@ -342,6 +352,10 @@ struct CurrentBlock: Codable, Sendable {
     let cacheHitPercent: Double
     /// Codex credits consumed in the period (nil on payloads from older builds).
     let codexCredits: Double?
+    /// True when some Codex usage had no published credit rate.
+    var codexCreditsIncomplete: Bool? = nil
+    /// True when Fast-mode usage uses Standard rates as an estimate.
+    var codexCreditsEstimated: Bool? = nil
     let topActivities: [ActivityEntry]
     let topModels: [ModelEntry]
     let localModelSavings: LocalModelSavings
@@ -395,7 +409,8 @@ struct PullRequestRow: Codable, Sendable {
 extension CurrentBlock {
     enum CodingKeys: String, CodingKey {
         case label, cost, calls, sessions, sessionCountBasis, oneShotRate, inputTokens, outputTokens,
-             cacheHitPercent, codexCredits, topActivities, topModels, localModelSavings, providers, providerDetails, topProjects,
+             cacheHitPercent, codexCredits, codexCreditsIncomplete, codexCreditsEstimated,
+             topActivities, topModels, localModelSavings, providers, providerDetails, topProjects,
              modelEfficiency, topSessions, retryTax, routingWaste,
              tools, skills, subagents, mcpServers,
              workflow, topReworkedFiles, pullRequests, unpricedModels
@@ -412,6 +427,8 @@ extension CurrentBlock {
         outputTokens = try c.decode(Int.self, forKey: .outputTokens)
         cacheHitPercent = try c.decodeIfPresent(Double.self, forKey: .cacheHitPercent) ?? 0
         codexCredits = try c.decodeIfPresent(Double.self, forKey: .codexCredits)
+        codexCreditsIncomplete = try c.decodeIfPresent(Bool.self, forKey: .codexCreditsIncomplete)
+        codexCreditsEstimated = try c.decodeIfPresent(Bool.self, forKey: .codexCreditsEstimated)
         topActivities = try c.decodeIfPresent([ActivityEntry].self, forKey: .topActivities) ?? []
         topModels = try c.decodeIfPresent([ModelEntry].self, forKey: .topModels) ?? []
         localModelSavings = try c.decodeIfPresent(LocalModelSavings.self, forKey: .localModelSavings) ?? LocalModelSavings(totalUSD: 0, calls: 0, byModel: [], byProvider: [])

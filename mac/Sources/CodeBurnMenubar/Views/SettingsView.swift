@@ -359,6 +359,7 @@ private final class SettingsWindowStyleView: NSView {
 
 private struct GeneralSettingsTab: View {
     @Environment(AppStore.self) private var store
+    @Environment(UpdateChecker.self) private var updateChecker
 
     // "Custom…" budget entry state, one per metric (cost in dollars, tokens in
     // millions). When custom is active the picker shows "Custom…" and a field
@@ -527,10 +528,12 @@ private struct GeneralSettingsTab: View {
             }
 
             Section(L("Notifications")) {
-                Toggle(L("Notify me about updates"), isOn: $notifyAboutUpdates)
-                Text(L("Posts a notification when a new CodeBurn release is available. Click it to install."))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                if updateChecker.supportsAutomaticUpdates {
+                    Toggle(L("Notify me about updates"), isOn: $notifyAboutUpdates)
+                    Text(L("Posts a notification when a new CodeBurn release is available. Click it to install."))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
                 Toggle(L("Notify me when Codex banks a limit reset"), isOn: $notifyAboutBankedResets)
                 Text(L("OpenAI sometimes grants Codex accounts a credit that resets a rate-limit window early. CodeBurn reads these from the quota response it already fetches and tells you once per grant. It never spends one."))
                     .font(.system(size: 11))
@@ -2268,42 +2271,40 @@ private struct AboutSettingsTab: View {
                     .listRowBackground(Color.clear)
             }
 
-            Section {
-                LabeledContent(L("Version %@", versionString)) {
-                    Button(L("Check for Updates")) {
-                        Task { await updateChecker.check() }
+            if updateChecker.supportsAutomaticUpdates {
+                Section {
+                    LabeledContent(L("Version %@", versionString)) {
+                        Button(L("Check for Updates")) {
+                            Task { await updateChecker.check() }
+                        }
                     }
+                    if let error = updateChecker.updateError {
+                        Text(error)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } else if updateChecker.updateAvailable, let latest = updateChecker.latestVersion {
+                        Text(L("%@ is available. Choose Check for Updates in the CodeBurn menu to install it.", AppVersion.display(latest)))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text(L("Updates"))
                 }
-                if let error = updateChecker.updateError {
-                    Text(error)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                } else if updateChecker.updateAvailable, let latest = updateChecker.latestVersion {
-                    Text(L("%@ is available. Choose Check for Updates in the CodeBurn menu to install it.", AppVersion.display(latest)))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                Text(L("Updates"))
             }
 
             Section {
                 AboutLinkRow(
                     icon: "chevron.left.slash.chevron.right",
                     title: L("GitHub"),
-                    url: "https://github.com/getagentseal/codeburn")
-                AboutLinkRow(
-                    icon: "globe",
-                    title: L("Website"),
-                    url: "https://codeburn.app")
+                    url: "https://github.com/vozer/agent-spendbar")
                 AboutLinkRow(
                     icon: "exclamationmark.bubble",
                     title: L("Issues"),
-                    url: "https://github.com/getagentseal/codeburn/issues")
+                    url: "https://github.com/vozer/agent-spendbar/issues")
             } header: {
                 Text(L("Links"))
             } footer: {
-                Text(L("© 2026 Resham Joshi (iamtoruk) · AgentSeal. MIT License."))
+                Text("Agent Spendbar is a fork of CodeBurn by AgentSeal. MIT License.")
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
             }
@@ -2327,11 +2328,11 @@ private struct AboutSettingsTab: View {
             }
 
             VStack(spacing: 2) {
-                Text("CodeBurn")
+                Text("Agent Spendbar")
                     .font(.title3).fontWeight(.semibold)
                 Text(L("Version %@", versionString))
                     .foregroundStyle(.secondary)
-                Text(L("Your AI Bill, Itemized"))
+                Text("Monthly budgets at a glance")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

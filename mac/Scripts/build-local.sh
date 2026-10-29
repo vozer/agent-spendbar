@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# build-local.sh, Build CodeBurnMenubar.app on a macOS 14 (Sonoma) machine.
+# build-local.sh, Build AgentSpendbar.app on a macOS 14 (Sonoma) machine.
 # ============================================================================
 # Why this exists
 # ---------------
@@ -28,8 +28,9 @@
 set -euo pipefail
 
 VERSION="${1:-dev}"
-BUNDLE_ID="org.agentseal.codeburn-menubar"
-EXE="CodeBurnMenubar"
+BUNDLE_ID="io.github.vozer.agent-spendbar"
+EXE="AgentSpendbarMenubar"
+RESOURCE_BUNDLE_NAME="CodeBurnMenubar_CodeBurnMenubar.bundle"
 MIN_MACOS="14.0"
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
@@ -37,7 +38,7 @@ MAC_DIR="${ROOT}/mac"
 ICON_SOURCE="${ROOT}/assets/menubar-logo.png"
 SCRATCH="$(mktemp -d /tmp/codeburn-local-build.XXXXXX)"
 APPS="${HOME}/Applications"
-BUNDLE="${APPS}/${EXE}.app"
+BUNDLE="${APPS}/AgentSpendbar.app"
 
 trap 'rm -rf "${SCRATCH}"' EXIT
 
@@ -113,7 +114,7 @@ cp "${ICON_SOURCE}" "${BUNDLE}/Contents/Resources/menubar-logo.png"
 # string falls back to its English key. Mirrors package-app.sh:53-58.
 # The arm64 bin path is enough: the bundle is arch-independent.
 SPM_BIN_PATH="$(cd "${SCRATCH}" && "${SWIFT}" build -c release --arch arm64 --show-bin-path)"
-SPM_RESOURCE_BUNDLE="${SPM_BIN_PATH}/${EXE}_${EXE}.bundle"
+SPM_RESOURCE_BUNDLE="${SPM_BIN_PATH}/${RESOURCE_BUNDLE_NAME}"
 if [[ -d "${SPM_RESOURCE_BUNDLE}" ]]; then
   cp -R "${SPM_RESOURCE_BUNDLE}" "${BUNDLE}/Contents/Resources/"
 else
@@ -138,7 +139,7 @@ cat > "${BUNDLE}/Contents/Info.plist" <<PLIST
     <key>CFBundleDevelopmentRegion</key><string>en</string>
     <!-- Keep in sync with package-app.sh and Package.swift's localizations. -->
     <key>CFBundleLocalizations</key><array><string>en</string><string>fr</string><string>ja</string><string>ko</string><string>zh-Hans</string><string>zh-Hant</string></array>
-    <key>CFBundleDisplayName</key><string>CodeBurn Menubar</string>
+    <key>CFBundleDisplayName</key><string>Agent Spendbar</string>
     <key>CFBundleExecutable</key><string>${EXE}</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundleIdentifier</key><string>${BUNDLE_ID}</string>
@@ -164,4 +165,4 @@ echo ""
 echo "✓ Installed ${BUNDLE}"
 lipo -info "${BUNDLE}/Contents/MacOS/${EXE}" | sed 's/^/  /'
 vtool -show-build "${BUNDLE}/Contents/MacOS/${EXE}" 2>/dev/null | grep -iE "minos|sdk" | sed 's/^/  /'
-echo "  Launch with: codeburn menubar   (or: open '${BUNDLE}')"
+echo "  Launch with: open '${BUNDLE}'"

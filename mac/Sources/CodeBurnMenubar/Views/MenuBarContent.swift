@@ -668,7 +668,7 @@ struct CLIUpdateBanner: View {
     }
 }
 
-private let starBannerGitHubURL = URL(string: "https://github.com/getagentseal/codeburn")!
+private let starBannerGitHubURL = URL(string: "https://github.com/vozer/agent-spendbar")!
 
 /// Shown at the very bottom on first launch. A small terracotta strip nudges users to star the
 /// repo; clicking opens GitHub, clicking the close icon hides it forever (persisted to
@@ -687,7 +687,7 @@ struct StarBanner: View {
                     NSWorkspace.shared.open(starBannerGitHubURL)
                 } label: {
                     HStack(spacing: 4) {
-                        Text(L("Enjoying CodeBurn?"))
+                        Text("Enjoying Agent Spendbar?")
                             .foregroundStyle(.primary)
                         Text(L("Star us on GitHub"))
                             .foregroundStyle(Theme.brandAccent)

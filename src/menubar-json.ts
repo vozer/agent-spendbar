@@ -31,6 +31,10 @@ export type PeriodData = {
   /// Total Codex credits consumed in the period (issues #408/#495). Optional so
   /// non-menubar PeriodData producers don't have to compute it.
   codexCredits?: number
+  /// True when any Codex usage lacked a published credit rate.
+  codexCreditsIncomplete?: boolean
+  /// True when Fast-mode usage uses the Standard rate as an estimate.
+  codexCreditsEstimated?: boolean
   categories: Array<{ name: string; cost: number; savingsUSD: number; turns: number; editTurns: number; oneShotTurns: number; rawCategory?: string }>
   models: Array<{
     name: string
@@ -321,6 +325,10 @@ export type MenubarPayload = {
     cacheHitPercent: number
     /// Codex credits consumed in the period; 0 when there is no Codex usage.
     codexCredits: number
+    /// True when some Codex credit usage could not be rated.
+    codexCreditsIncomplete?: boolean
+    /// True when Fast-mode usage uses the Standard rate as an estimate.
+    codexCreditsEstimated?: boolean
     /// Portion of `cost` priced from estimated tokens (see ParsedApiCall.isEstimated).
     /// Machine-readable signal that distinguishes guessed spend from metered spend;
     /// display/metadata only, never summed into `cost`. Optional for compatibility
@@ -833,6 +841,8 @@ export function buildMenubarPayload(
       cacheWriteTokens: current.cacheWriteTokens,
       cacheHitPercent: cacheHitPercent(current.inputTokens, current.cacheReadTokens),
       codexCredits: current.codexCredits ?? 0,
+      ...(current.codexCreditsIncomplete ? { codexCreditsIncomplete: true } : {}),
+      ...(current.codexCreditsEstimated ? { codexCreditsEstimated: true } : {}),
       estimatedCostUSD: current.estimatedCostUSD ?? 0,
       topActivities: buildTopActivities(current.categories),
       topModels: buildTopModels(current.models),

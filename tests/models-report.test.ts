@@ -42,6 +42,7 @@ function makeCall(opts: {
   savingsUSD?: number
   savingsBaselineModel?: string
   timestamp?: string
+  speed?: ParsedApiCall['speed']
   isEstimated?: boolean
 }): ParsedApiCall {
   return {
@@ -61,7 +62,7 @@ function makeCall(opts: {
     skills: [],
     hasAgentSpawn: false,
     hasPlanMode: false,
-    speed: 'standard',
+    speed: opts.speed ?? 'standard',
     timestamp: opts.timestamp ?? '2026-05-09T00:00:00.000Z',
     bashCommands: [],
     deduplicationKey: `${opts.provider}-${opts.model}-${opts.costUSD}-${opts.timestamp ?? 'default'}`,
@@ -174,11 +175,23 @@ describe('aggregateModels', () => {
     const byKey = Object.fromEntries(rows.map(r => [`${r.provider}:${r.model}`, r]))
     expect(byKey['codex:gpt-5.5']!.credits).toBeCloseTo(887.5, 6)
     expect(byKey['codex:gpt-5']!.credits).toBeNull()
+    expect(byKey['codex:gpt-5']!.creditsIncomplete).toBe(true)
     expect(byKey['claude:claude-sonnet-4-6']!.credits).toBeNull()
     expect(byKey['codex:gpt-5.5']!.creditsIncomplete).toBeFalsy()
   })
 
-  it('rates auto-review credits per call date: gpt-5.4 before 30 Jul 2026, unrated after', async () => {
+  it('marks Fast-mode Codex credits as approximate without changing the Standard rate', async () => {
+    const rows = await aggregateModels([makeProject([
+      makeTurn('feature', [
+        makeCall({ provider: 'codex', model: 'gpt-6.1-sol', input: 1_000_000, costUSD: 1, speed: 'fast' }),
+      ]),
+    ])])
+
+    expect(rows[0]!.credits).toBe(50)
+    expect(rows[0]!.creditsEstimated).toBe(true)
+  })
+
+  it('rates auto-review credits per call date: gpt-5.4 before 30 Jul 2026, GPT-5.6 Luna after', async () => {
     const rows = await aggregateModels([makeProject([
       makeTurn('feature', [
         makeCall({ provider: 'codex', model: 'codex-auto-review', output: 1_000_000, costUSD: 15, timestamp: '2026-07-29T23:00:00Z' }),
@@ -186,9 +199,9 @@ describe('aggregateModels', () => {
       ]),
     ])])
     expect(rows).toHaveLength(1)
-    // gpt-5.4 output is 375 credits/M; Luna has no published credit rate.
-    expect(rows[0]!.credits).toBeCloseTo(375, 6)
-    expect(rows[0]!.creditsIncomplete).toBe(true)
+    // gpt-5.4 output is 375 credits/M; gpt-5.6 Luna output is 30 credits/M.
+    expect(rows[0]!.credits).toBeCloseTo(405, 6)
+    expect(rows[0]!.creditsIncomplete).toBeFalsy()
   })
 
   it('partial-sums Codex credits when a merge mixes rated and unrated ids', async () => {

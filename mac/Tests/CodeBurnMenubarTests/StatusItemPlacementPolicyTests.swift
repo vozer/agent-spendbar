@@ -162,6 +162,6 @@ struct StatusItemPlacementPolicyTests {
 
     @Test("keeps a stable autosave identity across launches")
     func stableAutosaveIdentity() {
-        #expect(StatusItemPlacementPolicy.autosaveName == "CodeBurnMenubar.MainStatusItem")
+        #expect(StatusItemPlacementPolicy.autosaveName == "AgentSpendbar.MainStatusItem")
     }
 }

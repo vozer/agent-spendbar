@@ -307,9 +307,15 @@ final class UpdateChecker {
         AppVersion.normalizedBundleShortVersion
     }
 
+    var supportsAutomaticUpdates: Bool {
+        Bundle.main.bundleIdentifier == Telemetry.releaseBundleID
+    }
+
     /// At launch and then hourly for the life of the app; `checkIfNeeded` keeps the real
     /// check to once per `checkIntervalSeconds` unless a version changed.
     func poll() async {
+        // A fork must not install the upstream app over its own bundle.
+        guard supportsAutomaticUpdates else { return }
         while !Task.isCancelled {
             await checkIfNeeded()
             try? await Task.sleep(for: .seconds(pollIntervalSeconds))
@@ -334,6 +340,7 @@ final class UpdateChecker {
     }
 
     func checkIfNeeded() async {
+        guard supportsAutomaticUpdates else { return }
         // A background check would wipe an update failure the user has not acted on yet.
         guard !isUpdating, updateFailureStage == nil || updateFailureStage == .check else { return }
         installedCliVersion = await Task.detached { Self.queryInstalledCliVersion() }.value
@@ -363,6 +370,7 @@ final class UpdateChecker {
     }
 
     func check() async {
+        guard supportsAutomaticUpdates else { return }
         updateError = nil
         updateFailureStage = nil
         installedCliVersion = Self.queryInstalledCliVersion()
@@ -603,6 +611,7 @@ final class UpdateChecker {
     /// installer runs from the version it ships with), then the app itself.
     /// Each stage surfaces its own error and stops the sequence.
     func performFullUpdate() {
+        guard supportsAutomaticUpdates else { return }
         installedCliVersion = Self.queryInstalledCliVersion()
         guard !isUpdating else { return }
         if Self.usesEngine(installedCli: installedCliVersion) {

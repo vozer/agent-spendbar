@@ -49,6 +49,8 @@ export type ModelReportRow = {
   /// True when `credits` is a partial sum because some contributing buckets
   /// had no known credit rate.
   creditsIncomplete?: boolean
+  /// True when any Codex call used Fast mode, whose multiplier depends on the plan.
+  creditsEstimated?: boolean
   /// Peak-hours split (#peak-hours): consumption shares of the stored
   /// `costUSD` (list rate), never a repricing — `peakUSD + offPeakUSD ==
   /// costUSD` for every split row, because the vendor's own bill applies the
@@ -115,6 +117,7 @@ type Bucket = {
   /// date); null until a call is rated. creditsUnrated marks any unrated call.
   credits: number | null
   creditsUnrated: boolean
+  creditsEstimated: boolean
 }
 
 type ModelKey = string
@@ -234,6 +237,7 @@ export async function aggregateModels(projects: ProjectSummary[], opts: Aggregat
               offPeakCalls: 0,
               credits: null,
               creditsUnrated: false,
+              creditsEstimated: false,
             }
             buckets.set(key, bucket)
           }
@@ -253,6 +257,7 @@ export async function aggregateModels(projects: ProjectSummary[], opts: Aggregat
           // non-cached with the cache read holding cached input - exactly what
           // the credit rates expect.
           if (provider === 'codex') {
+            if (call.speed === 'fast') bucket.creditsEstimated = true
             const credits = codexCredits(model, {
               inputTokens: call.usage.inputTokens,
               cachedReadTokens: Math.max(call.usage.cacheReadInputTokens, call.usage.cachedInputTokens),
@@ -338,7 +343,8 @@ export async function aggregateModels(projects: ProjectSummary[], opts: Aggregat
     // Sum the rated calls and flag the row incomplete when any contributor is
     // unrated — nulling the whole merge would zero a real menubar total.
     const bucketCredits = bucket.credits
-    const bucketCreditsIncomplete = bucketCredits !== null && bucket.creditsUnrated
+    const bucketCreditsIncomplete = bucket.provider === 'codex'
+      && (bucketCredits === null || bucket.creditsUnrated)
 
     const baselines = baselinesByKey.get(resolvedKey) ?? new Set<string>()
     if (bucket.savingsBaselineModel) baselines.add(bucket.savingsBaselineModel)
@@ -359,6 +365,7 @@ export async function aggregateModels(projects: ProjectSummary[], opts: Aggregat
       mergePeakSplit(existing, bucket)
       existing.savingsBaselineModel = resolvedBaseline
       if (!existing.rawModels.includes(bucket.model)) existing.rawModels.push(bucket.model)
+      if (bucket.creditsEstimated) existing.creditsEstimated = true
       const existingRated = existing.credits !== null
       const incomingRated = bucketCredits !== null
       if (incomingRated) existing.credits = (existing.credits ?? 0) + bucketCredits
@@ -385,6 +392,7 @@ export async function aggregateModels(projects: ProjectSummary[], opts: Aggregat
         rawModels: [bucket.model],
         credits: bucketCredits,
         ...(bucketCreditsIncomplete ? { creditsIncomplete: true } : {}),
+        ...(bucket.creditsEstimated ? { creditsEstimated: true } : {}),
         ...peakSplitForRow(bucket),
       })
     }
