@@ -6,7 +6,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const DOWNLOAD_BASE = 'https://github.com/getagentseal/codeburn/releases/download'
+const DOWNLOAD_BASE = 'https://github.com/vozer/agent-spendbar/releases/download'
 const FILE_LINE = /^(\s*(?:- )?(?:url|path): )(.+)$/
 
 function rewriteFeed(text, tag, assets) {

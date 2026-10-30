@@ -219,7 +219,7 @@
 "Change accent color" = "강조 색상 변경";
 "Copy update command to clipboard" = "업데이트 명령어를 클립보드에 복사";
 "Enjoying Agent Spendbar?" = "Agent Spendbar가 마음에 드시나요?";
-"Agent Spendbar is a fork of CodeBurn by AgentSeal. MIT License." = "Agent Spendbar는 AgentSeal의 CodeBurn 파생 버전입니다. MIT 라이선스.";
+"Agent Spendbar is based on CodeBurn by AgentSeal and Codex Spendbar by vozer. MIT License." = "Agent Spendbar는 AgentSeal의 CodeBurn과 vozer의 Codex Spendbar를 기반으로 합니다. MIT 라이선스.";
 "Agent Spendbar" = "Agent Spendbar";
 "Monthly budgets at a glance" = "월간 예산을 한눈에";
 "Star us on GitHub" = "GitHub에서 스타를 눌러주세요";
@@ -582,7 +582,7 @@
 "CLI" = "CLI";
 "API" = "API";
 "Version %@" = "버전 %@";
-"%@ is available. Choose Check for Updates in the CodeBurn menu to install it." = "%@ 버전이 나왔습니다. CodeBurn 메뉴에서 “업데이트 확인”을 선택해 설치하세요.";
+"%@ is available. Choose Check for Updates in the Agent Spendbar menu to install it." = "%@ 버전이 나왔습니다. Agent Spendbar 메뉴에서 “업데이트 확인”을 선택해 설치하세요.";
 "GitHub" = "GitHub";
 "Issues" = "이슈";
 "Links" = "링크";

@@ -473,10 +473,9 @@ function PrWorkPanel({ work }: { work: WhyPrWork }) {
   )
 }
 
-export function SessionView({ row, filters, medianCost, onBack }: {
+export function SessionView({ row, filters, onBack }: {
   row: SessionDrillRow
   filters: InvestigationFilters
-  medianCost?: number
   onBack: () => void
 }) {
   const [state, setState] = useState<{ data: SessionWhy | null; error: CliError | null }>({ data: null, error: null })
@@ -533,7 +532,7 @@ export function SessionView({ row, filters, medianCost, onBack }: {
   const details = (
     <details className="sv-details">
       <summary><Icon name="chevron-right" />{t('sessions.why.details.title')}<span>{t('sessions.why.details.hint')}</span></summary>
-      <div className="sv-details-body"><SessionDetails row={row} filters={filters} medianCost={medianCost} /></div>
+      <div className="sv-details-body"><SessionDetails row={row} filters={filters} /></div>
     </details>
   )
 

@@ -2,16 +2,16 @@ import type { SectionCatalog } from './types'
 
 export const onboarding: SectionCatalog = {
   en: {
-    'onboarding.dialog.ariaLabel': 'Welcome to CodeBurn',
+    'onboarding.dialog.ariaLabel': 'Welcome to Agent Spendbar',
 
     'onboarding.screens.dashboard.title': 'Every agent. One dashboard.',
-    'onboarding.screens.dashboard.body': 'Claude Code, Codex, Cursor, Copilot and 20+ more: spend, sessions, models and quotas, side by side.',
+    'onboarding.screens.dashboard.body': 'Claude Code, Codex, Cursor, Copilot and 20+ more: usage, sessions, models and quotas, side by side.',
     'onboarding.screens.localFirst.title': 'Local-first by design.',
     'onboarding.screens.localFirst.body': 'Usage is read from files already on your machine. No accounts, no API keys, nothing leaves your device.',
-    'onboarding.screens.findWaste.title': 'Find the waste.',
-    'onboarding.screens.findWaste.body': 'Retry tax, routing waste and task success by category: see what your agents actually deliver for the money.',
+    'onboarding.screens.findWaste.title': 'Understand usage.',
+    'onboarding.screens.findWaste.body': 'Explore retry patterns, routing choices and task success by category.',
 
-    'onboarding.consent.title': 'Help improve CodeBurn',
+    'onboarding.consent.title': 'Help improve Agent Spendbar',
     'onboarding.consent.body': "Share anonymous usage statistics: model and provider mix, task success rates, performance and errors. The daily report includes the names of the models, tools, skills and MCP servers you use, alongside bucketed counts of how often each one came up. Never your prompts, your code, or your project and file names.",
     'onboarding.consent.label': 'Anonymous usage statistics',
     'onboarding.consent.dataLink': 'What data we collect',
@@ -50,16 +50,16 @@ export const onboarding: SectionCatalog = {
     'onboarding.splash.oneTimeScanNote': 'One-time scan · future launches are instant',
   },
   fr: {
-    'onboarding.dialog.ariaLabel': 'Bienvenue dans CodeBurn',
+    'onboarding.dialog.ariaLabel': 'Bienvenue dans Agent Spendbar',
 
     'onboarding.screens.dashboard.title': 'Chaque agent. Un seul tableau de bord.',
-    'onboarding.screens.dashboard.body': 'Claude Code, Codex, Cursor, Copilot et 20+ autres : dépenses, sessions, modèles et quotas, côte à côte.',
+    'onboarding.screens.dashboard.body': 'Claude Code, Codex, Cursor, Copilot et 20+ autres : utilisation, sessions, modèles et quotas, côte à côte.',
     'onboarding.screens.localFirst.title': 'Local-first, par conception.',
     'onboarding.screens.localFirst.body': "L'utilisation est lue depuis des fichiers déjà présents sur votre machine. Aucun compte, aucune clé API, rien ne quitte votre appareil.",
-    'onboarding.screens.findWaste.title': 'Traquez le gaspillage.',
-    'onboarding.screens.findWaste.body': "Taxe de réessai, gaspillage de routage et taux de réussite des tâches par catégorie : voyez ce que vos agents livrent vraiment pour votre argent.",
+    'onboarding.screens.findWaste.title': 'Comprenez votre utilisation.',
+    'onboarding.screens.findWaste.body': 'Explorez les tentatives, les choix de routage et la réussite des tâches par catégorie.',
 
-    'onboarding.consent.title': 'Aidez à améliorer CodeBurn',
+    'onboarding.consent.title': 'Aidez à améliorer Agent Spendbar',
     'onboarding.consent.body': "Partagez des statistiques d'utilisation anonymes : répartition des modèles et fournisseurs, taux de réussite des tâches, performance et erreurs. Le rapport quotidien inclut les noms des modèles, outils, compétences et serveurs MCP que vous utilisez, ainsi que des compteurs groupés indiquant la fréquence de chacun. Jamais vos prompts, votre code, ni les noms de vos projets et fichiers.",
     'onboarding.consent.label': "Statistiques d'usage anonymes",
     'onboarding.consent.dataLink': 'Quelles données nous collectons',
@@ -98,16 +98,16 @@ export const onboarding: SectionCatalog = {
     'onboarding.splash.oneTimeScanNote': 'Analyse unique · les prochains lancements seront instantanés',
   },
   ja: {
-    'onboarding.dialog.ariaLabel': 'CodeBurn へようこそ',
+    'onboarding.dialog.ariaLabel': 'Agent Spendbar へようこそ',
 
     'onboarding.screens.dashboard.title': 'すべてのエージェントを、ひとつのダッシュボードに。',
-    'onboarding.screens.dashboard.body': 'Claude Code、Codex、Cursor、Copilot ほか20+:支出、セッション、モデル、クォータを横並びで確認。',
+    'onboarding.screens.dashboard.body': 'Claude Code、Codex、Cursor、Copilot ほか20+:使用状況、セッション、モデル、クォータを横並びで確認。',
     'onboarding.screens.localFirst.title': '設計からローカルファースト。',
     'onboarding.screens.localFirst.body': '使用状況はお使いのマシン上に既にあるファイルから読み取られます。アカウントもAPIキーも不要、デバイスの外には何も送信されません。',
-    'onboarding.screens.findWaste.title': '無駄を見つける。',
-    'onboarding.screens.findWaste.body': 'リトライ税、ルーティングの無駄、カテゴリ別のタスク成功率:エージェントが実際に何を生み出しているかを費用対効果で確認できます。',
+    'onboarding.screens.findWaste.title': '使用状況を把握。',
+    'onboarding.screens.findWaste.body': 'リトライの傾向、ルーティングの選択、カテゴリ別のタスク成功率を確認できます。',
 
-    'onboarding.consent.title': 'CodeBurn の改善にご協力ください',
+    'onboarding.consent.title': 'Agent Spendbar の改善にご協力ください',
     'onboarding.consent.body': '匿名の利用統計を共有します:モデルとプロバイダーの構成比、タスクの成功率、パフォーマンスとエラー。日次レポートには、使用しているモデル、ツール、スキル、MCPサーバーの名前と、それぞれの出現回数を区分けした件数が含まれます。プロンプト、コード、プロジェクト名やファイル名は一切含まれません。',
     'onboarding.consent.label': '匿名の利用統計',
     'onboarding.consent.dataLink': '収集するデータについて',
@@ -146,16 +146,16 @@ export const onboarding: SectionCatalog = {
     'onboarding.splash.oneTimeScanNote': '初回のみのスキャン · 次回以降の起動は瞬時です',
   },
   ko: {
-    'onboarding.dialog.ariaLabel': 'CodeBurn에 오신 것을 환영합니다',
+    'onboarding.dialog.ariaLabel': 'Agent Spendbar에 오신 것을 환영합니다',
 
     'onboarding.screens.dashboard.title': '모든 에이전트를 하나의 대시보드에.',
-    'onboarding.screens.dashboard.body': 'Claude Code, Codex, Cursor, Copilot 외 20+개:지출, 세션, 모델, 할당량을 한눈에 비교하세요.',
+    'onboarding.screens.dashboard.body': 'Claude Code, Codex, Cursor, Copilot 외 20+개:사용량, 세션, 모델, 할당량을 한눈에 비교하세요.',
     'onboarding.screens.localFirst.title': '설계부터 로컬 우선.',
     'onboarding.screens.localFirst.body': '사용 내역은 이미 내 컴퓨터에 있는 파일에서 읽어옵니다. 계정도, API 키도 필요 없으며 아무것도 기기 밖으로 나가지 않습니다.',
-    'onboarding.screens.findWaste.title': '낭비를 찾아내세요.',
-    'onboarding.screens.findWaste.body': '재시도 비용, 라우팅 낭비, 카테고리별 작업 성공률:에이전트가 실제로 그 비용만큼의 가치를 내는지 확인하세요.',
+    'onboarding.screens.findWaste.title': '사용량 이해하기.',
+    'onboarding.screens.findWaste.body': '재시도 패턴, 라우팅 선택, 카테고리별 작업 성공률을 살펴보세요.',
 
-    'onboarding.consent.title': 'CodeBurn 개선에 참여하기',
+    'onboarding.consent.title': 'Agent Spendbar 개선에 참여하기',
     'onboarding.consent.body': '익명 사용 통계를 공유합니다: 모델 및 제공자 비율, 작업 성공률, 성능 및 오류. 일일 보고서에는 사용 중인 모델, 도구, 스킬, MCP 서버의 이름과 각 항목의 발생 빈도를 구간별로 집계한 수치가 포함됩니다. 프롬프트, 코드, 프로젝트 및 파일 이름은 절대 포함되지 않습니다.',
     'onboarding.consent.label': '익명 사용 통계',
     'onboarding.consent.dataLink': '수집하는 데이터 안내',
@@ -194,16 +194,16 @@ export const onboarding: SectionCatalog = {
     'onboarding.splash.oneTimeScanNote': '일회성 스캔 · 이후 실행은 즉시 시작됩니다',
   },
   zhCN: {
-    'onboarding.dialog.ariaLabel': '欢迎使用 CodeBurn',
+    'onboarding.dialog.ariaLabel': '欢迎使用 Agent Spendbar',
 
     'onboarding.screens.dashboard.title': '所有智能体,一个仪表盘。',
-    'onboarding.screens.dashboard.body': 'Claude Code、Codex、Cursor、Copilot 等 20+ 款工具:支出、会话、模型和配额一目了然。',
+    'onboarding.screens.dashboard.body': 'Claude Code、Codex、Cursor、Copilot 等 20+ 款工具:使用情况、会话、模型和配额一目了然。',
     'onboarding.screens.localFirst.title': '设计即本地优先。',
     'onboarding.screens.localFirst.body': '使用情况从你机器上已有的文件中读取。无需账户,无需 API 密钥,任何内容都不会离开你的设备。',
-    'onboarding.screens.findWaste.title': '找出浪费。',
-    'onboarding.screens.findWaste.body': '重试成本、路由浪费和按类别划分的任务成功率:看看你的智能体到底为这笔钱交付了什么。',
+    'onboarding.screens.findWaste.title': '了解使用情况。',
+    'onboarding.screens.findWaste.body': '查看重试模式、路由选择和按类别划分的任务成功率。',
 
-    'onboarding.consent.title': '帮助改进 CodeBurn',
+    'onboarding.consent.title': '帮助改进 Agent Spendbar',
     'onboarding.consent.body': '分享匿名使用统计:模型与提供商占比、任务成功率、性能与错误。每日报告包含你使用的模型、工具、技能和 MCP 服务器的名称,以及每项出现频率的分档计数。绝不包含你的提示词、代码或项目和文件名称。',
     'onboarding.consent.label': '匿名使用统计',
     'onboarding.consent.dataLink': '我们收集哪些数据',
@@ -242,16 +242,16 @@ export const onboarding: SectionCatalog = {
     'onboarding.splash.oneTimeScanNote': '仅需扫描一次 · 之后启动将立即完成',
   },
   zhTW: {
-    'onboarding.dialog.ariaLabel': '歡迎使用 CodeBurn',
+    'onboarding.dialog.ariaLabel': '歡迎使用 Agent Spendbar',
 
     'onboarding.screens.dashboard.title': '所有代理,一個儀表板。',
-    'onboarding.screens.dashboard.body': 'Claude Code、Codex、Cursor、Copilot 等 20+ 款工具:支出、工作階段、模型和配額一目了然。',
+    'onboarding.screens.dashboard.body': 'Claude Code、Codex、Cursor、Copilot 等 20+ 款工具:使用情況、工作階段、模型和配額一目了然。',
     'onboarding.screens.localFirst.title': '設計上就是本地優先。',
     'onboarding.screens.localFirst.body': '使用情況會從你機器上已有的檔案中讀取。不需要帳號,不需要 API 金鑰,任何內容都不會離開你的裝置。',
-    'onboarding.screens.findWaste.title': '找出浪費。',
-    'onboarding.screens.findWaste.body': '重試成本、路由浪費,以及依類別劃分的工作成功率:看看你的代理實際上為這筆花費交付了什麼。',
+    'onboarding.screens.findWaste.title': '了解使用情況。',
+    'onboarding.screens.findWaste.body': '查看重試模式、路由選擇，以及依類別劃分的工作成功率。',
 
-    'onboarding.consent.title': '協助改善 CodeBurn',
+    'onboarding.consent.title': '協助改善 Agent Spendbar',
     'onboarding.consent.body': '分享匿名使用統計:模型與供應商占比、工作成功率、效能與錯誤。每日報告包含你使用的模型、工具、技能和 MCP 伺服器的名稱,以及每項出現頻率的分級計數。絕不包含你的提示詞、程式碼或專案和檔案名稱。',
     'onboarding.consent.label': '匿名使用統計',
     'onboarding.consent.dataLink': '我們收集哪些資料',

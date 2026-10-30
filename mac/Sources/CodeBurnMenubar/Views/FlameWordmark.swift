@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The "CodeBurn" wordmark filled with the website's animated flame gradient.
+/// The Agent Spendbar wordmark filled with the animated flame gradient.
 struct FlameWordmark: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppStore.self) private var store
@@ -21,7 +21,7 @@ struct FlameWordmark: View {
     ]
 
     private var wordmark: some View {
-        Text("CodeBurn")
+        Text("Agent Spendbar")
             .font(.system(size: 13, weight: .semibold))
             .tracking(-0.15)
     }
@@ -59,6 +59,6 @@ struct FlameWordmark: View {
                 sweeping = visible
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("CodeBurn")
+            .accessibilityLabel("Agent Spendbar")
     }
 }

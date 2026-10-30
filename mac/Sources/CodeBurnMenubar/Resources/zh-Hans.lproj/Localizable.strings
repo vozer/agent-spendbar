@@ -220,7 +220,7 @@
 "Change accent color" = "更改主题色";
 "Copy update command to clipboard" = "将更新命令复制到剪贴板";
 "Enjoying Agent Spendbar?" = "喜欢 Agent Spendbar 吗？";
-"Agent Spendbar is a fork of CodeBurn by AgentSeal. MIT License." = "Agent Spendbar 是 AgentSeal 创建的 CodeBurn 分支。MIT 许可证。";
+"Agent Spendbar is based on CodeBurn by AgentSeal and Codex Spendbar by vozer. MIT License." = "Agent Spendbar 基于 AgentSeal 的 CodeBurn 和 vozer 的 Codex Spendbar。MIT 许可证。";
 "Agent Spendbar" = "Agent Spendbar";
 "Monthly budgets at a glance" = "一眼查看月度预算";
 "Star us on GitHub" = "在 GitHub 上点个 Star";
@@ -581,7 +581,7 @@
 "CLI" = "命令行工具";
 "API" = "API";
 "Version %@" = "版本 %@";
-"%@ is available. Choose Check for Updates in the CodeBurn menu to install it." = "%@ 已发布。在 CodeBurn 菜单中选择“检查更新”即可安装。";
+"%@ is available. Choose Check for Updates in the Agent Spendbar menu to install it." = "%@ 已发布。在 Agent Spendbar 菜单中选择“检查更新”即可安装。";
 "GitHub" = "GitHub";
 "Issues" = "问题反馈";
 "Links" = "链接";

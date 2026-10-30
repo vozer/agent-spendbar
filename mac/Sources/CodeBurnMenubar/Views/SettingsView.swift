@@ -2078,7 +2078,7 @@ private struct AboutSettingsTab: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     } else if updateChecker.updateAvailable, let latest = updateChecker.latestVersion {
-                        Text(L("%@ is available. Choose Check for Updates in the CodeBurn menu to install it.", AppVersion.display(latest)))
+                        Text(L("%@ is available. Choose Check for Updates in the Agent Spendbar menu to install it.", AppVersion.display(latest)))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -2099,7 +2099,7 @@ private struct AboutSettingsTab: View {
             } header: {
                 Text(L("Links"))
             } footer: {
-                Text(L("Agent Spendbar is a fork of CodeBurn by AgentSeal. MIT License."))
+                Text(L("Agent Spendbar is based on CodeBurn by AgentSeal and Codex Spendbar by vozer. MIT License."))
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
             }

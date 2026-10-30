@@ -4,6 +4,12 @@ One line per file in this directory, recursively.
 
 ## docs/
 
+- [MANUAL.md](MANUAL.md) — Agent Spendbar's monthly percentages, setup, data sources, and project lineage.
+
+## Inherited CodeBurn documentation
+
+The remaining files describe CodeBurn's CLI and analytics. Some also document currency views that Agent Spendbar no longer shows. Use the Agent Spendbar manual for this app's behavior.
+
 - [architecture.md](architecture.md) — A map of the codebase.
 - [by-branch.md](by-branch.md) — The Spend view in CodeBurn Desktop has a By branch panel: pick a project and see where its AI spend went, per git branch, with the recorded worktrees and the individual sessions behind each branch.
 - [cli.md](cli.md) — Every CodeBurn command and keyboard shortcut, plus the report-focused flags for filtering, JSON output, and diagnosing detection.

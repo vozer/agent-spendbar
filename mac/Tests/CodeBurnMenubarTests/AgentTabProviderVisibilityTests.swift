@@ -4,6 +4,18 @@ import Testing
 
 @Suite("Agent tab provider visibility")
 struct AgentTabProviderVisibilityTests {
+    @Test("Codex, Claude, and Cursor tabs remain visible with no period activity")
+    func budgetProviderTabsStayVisible() {
+        let activeKeys = ProviderVisibility.activeKeys(providerDetails: [], legacyProviders: [:])
+        let visible = ProviderFilter.allCases.filter { ProviderVisibility.shouldShowTab($0, activeKeys: activeKeys) }
+
+        #expect(visible.contains(.all))
+        #expect(visible.contains(.codex))
+        #expect(visible.contains(.claude))
+        #expect(visible.contains(.cursor))
+        #expect(!visible.contains(.pi))
+    }
+
     @Test("zero-cost providers with usage remain active while idle providers stay hidden")
     func zeroCostProvidersWithUsageRemainActive() {
         let details = [

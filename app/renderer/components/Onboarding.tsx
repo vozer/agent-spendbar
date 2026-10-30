@@ -7,7 +7,7 @@ import flame from '../assets/onboarding-flame.png'
 import { displayVersion } from '../lib/platform'
 import { t } from '../i18n'
 
-const COLLECT_URL = 'https://www.codeburn.app/telemetry'
+const COLLECT_URL = 'https://github.com/vozer/agent-spendbar/blob/main/docs/MANUAL.md#data-and-privacy'
 
 type Screen = {
   titleKey: string
@@ -62,7 +62,7 @@ export function Onboarding({ defaultEnabled, onDone }: { defaultEnabled: boolean
       <div className="onboard-col">
         <span className="onboard-lockup" aria-hidden>
           <img className="onboard-flame" src={flame} alt="" draggable={false} />
-          <b className="flame-text">CodeBurn</b>
+          <b className="flame-text">Agent Spendbar</b>
         </span>
 
         <div className="onboard-step" key={step}>

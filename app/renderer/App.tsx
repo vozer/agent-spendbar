@@ -950,7 +950,7 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
         ) : (
           section === 'overview' ? (
             <div key={transientProject?.path ?? ''} className={motionClass('body', 'section-fade')}>
-              <MonthlyUsageApp />
+            <MonthlyUsageApp onNavigate={navigate} />
             </div>
           ) : (
           <>

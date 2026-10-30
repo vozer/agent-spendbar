@@ -82,10 +82,10 @@ describe('navHistory', () => {
   it('forward is empty after a brand-new navigation', () => {
     const first = state()
     let history = pushState(EMPTY_NAV_HISTORY, first, state({ section: 'sessions' }))
-    history = pushState(history, state({ section: 'sessions' }), state({ section: 'spend' }))
-    const back = backState(history, state({ section: 'spend' }))
+    history = pushState(history, state({ section: 'sessions' }), state({ section: 'models' }))
+    const back = backState(history, state({ section: 'models' }))
     expect(back!.state.section).toBe('sessions')
-    expect(forwardState({ past: history.past, future: [] }, state({ section: 'spend' }))).toBeNull()
+    expect(forwardState({ past: history.past, future: [] }, state({ section: 'models' }))).toBeNull()
   })
 
   it('bounds the past stack', () => {
@@ -101,7 +101,7 @@ describe('navHistory', () => {
 
   it('navStateKey distinguishes every dimension', () => {
     const base = navStateKey(state())
-    expect(base).not.toBe(navStateKey(state({ section: 'spend' })))
+    expect(base).not.toBe(navStateKey(state({ section: 'models' })))
     expect(base).not.toBe(navStateKey(state({ filters: dayFilters('2026-09-10') })))
     expect(base).not.toBe(navStateKey(state({ sessionId: 'x' })))
     expect(base).not.toBe(navStateKey(state({ sort: 'recent' })))

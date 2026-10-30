@@ -41,17 +41,12 @@ export function useCompanionUpdate(): CompanionUpdateStatus | null {
  *  no single direct asset fits (Linux ships three formats) or the platform is
  *  unknown. https-only, so it passes the openExternal allowlist. */
 export function releasePageUrl(tag: string): string {
-  return `https://github.com/getagentseal/codeburn/releases/tag/${tag}`
+  return `https://github.com/vozer/agent-spendbar/releases/tag/${tag}`
 }
 
-/** Official signed Windows distribution. The Store handles installation and
- *  updates, avoiding the unsigned GitHub installer and SmartScreen warning. */
-export const MICROSOFT_STORE_URL = 'https://apps.microsoft.com/detail/9P0R4ZL5XMB8'
-
 /**
- * Preferred install target for the running platform. macOS downloads the
- * matching release asset; Windows opens the signed Microsoft Store listing.
- * Returns null (callers fall back to the release page) for Linux — three
+ * Preferred install target for the running platform. macOS and Windows use
+ * matching assets from this repository's release. Returns null for Linux — three
  * formats, the user picks — and for unknown platforms or a preload without
  * `arch`.
  */
@@ -61,12 +56,12 @@ export function directDownloadUrl(tag: string, platform: string | undefined, arc
   let file: string | null = null
   if (platform === 'darwin') {
     if (!arch) return null
-    file = arch === 'arm64' ? `CodeBurn-${version}-arm64.dmg` : `CodeBurn-${version}.dmg`
+    file = arch === 'arm64' ? `AgentSpendbar-${version}-arm64.dmg` : `AgentSpendbar-${version}.dmg`
   } else if (platform === 'win32') {
-    return MICROSOFT_STORE_URL
+    file = `AgentSpendbar-Setup-${version}.exe`
   }
   if (!file) return null
-  return `https://github.com/getagentseal/codeburn/releases/download/${tag}/${file}`
+  return `https://github.com/vozer/agent-spendbar/releases/download/${tag}/${file}`
 }
 
 /** The Download click target: direct asset when determinable, else the page. */

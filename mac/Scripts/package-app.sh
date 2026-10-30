@@ -137,7 +137,7 @@ cat > "${BUNDLE}/Contents/Info.plist" <<PLIST
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSHumanReadableCopyright</key>
-    <string>© AgentSeal</string>
+    <string>© Agent Spendbar contributors</string>
 </dict>
 </plist>
 PLIST

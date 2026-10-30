@@ -1,4 +1,4 @@
-// "Update available" check for CodeBurn Desktop, mirroring the Swift menubar's
+// "Update available" check for Agent Spendbar Desktop, mirroring the Swift menubar's
 // UpdateChecker (mac/Sources/CodeBurnMenubar/Data/UpdateChecker.swift): it reads
 // the public GitHub releases feed once per launch and every 24h, finds the newest
 // `desktop-v<semver>` release, and semver-compares it to the running version.
@@ -13,7 +13,7 @@
 // token — so the request reveals nothing about the user or install. GitHub only
 // requires *some* User-Agent, which the default satisfies. See fetchReleases.
 
-const RELEASES_URL = 'https://api.github.com/repos/getagentseal/codeburn/releases?per_page=15'
+const RELEASES_URL = 'https://api.github.com/repos/vozer/agent-spendbar/releases?per_page=15'
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
 const FETCH_TIMEOUT_MS = 15_000
 // Desktop releases are tagged `desktop-v<major>.<minor>.<patch>` (app/DISTRIBUTION.md).

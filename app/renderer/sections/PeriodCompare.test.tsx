@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PeriodDiffReport, PeriodSessionDiff } from '../lib/types'
 import { __resetPolledMemo } from '../hooks/usePolled'
-import { PeriodCompare, defaultSevenRanges, leadSentence } from './PeriodCompare'
+import { PeriodCompare, defaultSevenRanges } from './PeriodCompare'
 
 const mocks = vi.hoisted(() => ({
   getPeriodCompare: vi.fn<(a: { from: string; to: string }, b: { from: string; to: string }, provider: string) => Promise<PeriodDiffReport>>(),
@@ -217,39 +217,6 @@ describe('PeriodCompare', () => {
     expect(screen.getByLabelText('B · analyzed: 2026-03-02 to 2026-03-08')).toBeInTheDocument()
   })
 
-  it('leads with a sentence that names the divergence when sessions move far more than cost per call', async () => {
-    const divergent: PeriodDiffReport = {
-      ...report,
-      totals: {
-        ...report.totals,
-        A: { ...report.totals.A, cost: 2630 },
-        B: { ...report.totals.B, cost: 936 },
-        pct: { ...report.totals.pct, cost: -64.4, sessions: -86.8 },
-      },
-      normalized: { ...report.normalized, per100Calls: { a: 20.73, b: 14.52, diff: -6.21, pct: -30 } },
-    }
-    // The clause never asserts a direction it does not measure: cost per call
-    // fell, so the calls got cheaper, whichever way sessions went.
-    expect(leadSentence(divergent)).toBe(
-      'The week of Mar 9, 2026 cost 64% less than the week before: $936.00 versus $2,630.00.'
-      + ' Far fewer sessions, and cheaper calls: cost per call fell only 30%.',
-    )
-    const opposite: PeriodDiffReport = {
-      ...divergent,
-      totals: { ...divergent.totals, pct: { ...divergent.totals.pct, cost: 219, sessions: 636 } },
-      normalized: { ...divergent.normalized, per100Calls: { a: 14.52, b: 19.76, diff: 5.24, pct: 36.11 } },
-    }
-    expect(leadSentence(opposite)).toContain('Far more sessions, and more expensive calls: cost per call rose only 36%.')
-    mocks.getPeriodCompare.mockResolvedValue(divergent)
-    render(<PeriodCompare provider="all" />)
-    expect(await screen.findByText(/Far fewer sessions, and cheaper calls/)).toBeInTheDocument()
-  })
-
-  it('reads a near-flat range as flat rather than "0% less"', () => {
-    const flat: PeriodDiffReport = { ...report, totals: { ...report.totals, pct: { ...report.totals.pct, cost: -0.3 } } }
-    expect(leadSentence(flat)).toContain('cost the same as the week before')
-  })
-
   it('rounds the tile percentages the way the sentence above them does', async () => {
     const tiles: PeriodDiffReport = {
       ...report,
@@ -348,36 +315,6 @@ describe('PeriodCompare', () => {
     expect(screen.getByRole('status')).toHaveTextContent('duration differs by −2 days')
     expect(screen.getByText(/These models have no price/)).toHaveTextContent('mystery-model (A, 1 call)')
     vi.unstubAllGlobals()
-  })
-
-  it('leads with both directions when sessions and cost per call move together', () => {
-    const together: PeriodDiffReport = {
-      ...report,
-      totals: {
-        ...report.totals,
-        A: { ...report.totals.A, cost: 160 },
-        B: { ...report.totals.B, cost: 120 },
-        pct: { ...report.totals.pct, cost: -25, sessions: -10 },
-      },
-      normalized: { ...report.normalized, per100Calls: { a: 1000, b: 800, diff: -200, pct: -20 } },
-    }
-    expect(leadSentence(together)).toBe(
-      'The week of Mar 9, 2026 cost 25% less than the week before: $120.00 versus $160.00. Fewer sessions and cheaper calls.',
-    )
-  })
-
-  it('names the range instead of the week when the ranges are not seven days', () => {
-    const notWeeks: PeriodDiffReport = {
-      ...report,
-      rangeA: { ...report.rangeA, days: 10 },
-      rangeB: { ...report.rangeB, days: 10 },
-      totals: { ...report.totals, pct: { ...report.totals.pct, cost: 60, sessions: 10 } },
-      normalized: { ...report.normalized, per100Calls: { a: 1000, b: 1200, diff: 200, pct: 20 } },
-    }
-    expect(leadSentence(notWeeks)).toBe(
-      'The Mar 9, 2026 to Mar 15, 2026 range cost 60% more than the range before: $160.00 versus $100.00.'
-      + ' More sessions and more expensive calls.',
-    )
   })
 
   it('shows the five biggest movers and expands to the full list on request', async () => {

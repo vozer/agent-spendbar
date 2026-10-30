@@ -4,23 +4,23 @@ vi.mock('../lib/ipc', () => ({
   codeburn: { platform: 'linux', arch: 'x64' },
 }))
 
-import { directDownloadUrl, MICROSOFT_STORE_URL, releasePageUrl, updateDownloadUrl } from './useUpdateStatus'
+import { directDownloadUrl, releasePageUrl, updateDownloadUrl } from './useUpdateStatus'
 
 const TAG = 'desktop-v0.9.19'
-const BASE = 'https://github.com/getagentseal/codeburn/releases/download/desktop-v0.9.19'
+const BASE = 'https://github.com/vozer/agent-spendbar/releases/download/desktop-v0.9.19'
 
 describe('directDownloadUrl', () => {
   it('maps macOS arm64 to the arm64 dmg', () => {
-    expect(directDownloadUrl(TAG, 'darwin', 'arm64')).toBe(`${BASE}/CodeBurn-0.9.19-arm64.dmg`)
+    expect(directDownloadUrl(TAG, 'darwin', 'arm64')).toBe(`${BASE}/AgentSpendbar-0.9.19-arm64.dmg`)
   })
 
   it('maps macOS x64 to the plain dmg', () => {
-    expect(directDownloadUrl(TAG, 'darwin', 'x64')).toBe(`${BASE}/CodeBurn-0.9.19.dmg`)
+    expect(directDownloadUrl(TAG, 'darwin', 'x64')).toBe(`${BASE}/AgentSpendbar-0.9.19.dmg`)
   })
 
-  it('maps Windows to the official Microsoft Store regardless of arch', () => {
-    expect(directDownloadUrl(TAG, 'win32', 'x64')).toBe(MICROSOFT_STORE_URL)
-    expect(directDownloadUrl(TAG, 'win32', undefined)).toBe(MICROSOFT_STORE_URL)
+  it('maps Windows to the fork installer', () => {
+    expect(directDownloadUrl(TAG, 'win32', 'x64')).toBe(`${BASE}/AgentSpendbar-Setup-0.9.19.exe`)
+    expect(directDownloadUrl(TAG, 'win32', undefined)).toBe(`${BASE}/AgentSpendbar-Setup-0.9.19.exe`)
   })
 
   it('returns null for Linux (three formats, the user picks on the page)', () => {
@@ -38,7 +38,7 @@ describe('updateDownloadUrl fallback', () => {
   it('falls back to the release page when no direct asset fits', () => {
     // The mocked bridge reports linux, where no single asset fits, so the
     // click target is the release page.
-    expect(releasePageUrl(TAG)).toBe('https://github.com/getagentseal/codeburn/releases/tag/desktop-v0.9.19')
+    expect(releasePageUrl(TAG)).toBe('https://github.com/vozer/agent-spendbar/releases/tag/desktop-v0.9.19')
     expect(updateDownloadUrl(TAG)).toBe(releasePageUrl(TAG))
   })
 })

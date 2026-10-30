@@ -185,7 +185,7 @@ export function Splash({ hasData, hasError }: { hasData: boolean; hasError: bool
           <FlameMark size={76} />
         </div>
       )}
-      <div className="splash-word">CodeBurn</div>
+      <div className="splash-word">Agent Spendbar</div>
       <div className="splash-version">v{displayVersion()}</div>
       {showDetail && <SplashStatus progress={progress} />}
     </div>,

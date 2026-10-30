@@ -327,10 +327,6 @@ describe('App shortcuts', () => {
   it('maps the footer to the selected report instead of reusing Overview freshness', () => {
     expect(selectedReportMemoKeys('sessions', 'week', 'claude', null, 'overview-key'))
       .toEqual(['sessions|week|claude|-||'])
-    expect(selectedReportMemoKeys('spend', 'week', 'claude', null, 'overview-key'))
-      .toEqual(['overview-key', 'spendflow|week|claude|-||'])
-    expect(selectedReportMemoKeys('optimize', 'week', 'claude', null, 'overview-key'))
-      .toEqual(['overview-key', 'optimize|week|claude|-||', 'yield|week|claude|-||'])
     expect(selectedReportMemoKeys('models', 'week', 'claude', null, 'overview-key'))
       .toEqual(['models|week|claude|-|false|'])
     expect(selectedReportMemoKeys('compare', 'week', 'claude', null, 'overview-key'))

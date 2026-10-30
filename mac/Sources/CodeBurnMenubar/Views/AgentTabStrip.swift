@@ -121,20 +121,14 @@ struct AgentTabStrip: View {
     }
 
     private var visibleFilters: [ProviderFilter] {
-        // Tabs reflect the selected range. The payload's activity signal keeps
-        // token-only and subscription/flat-rate providers visible while hiding
-        // providers merely discovered on disk. Older payloads lack the activity
-        // signal, so their zero-cost discovery rows fail closed.
+        // Always keep the three budget providers visible. Other tabs follow
+        // actual activity in the selected period, so discovered tools stay hidden.
         let activeKeys = ProviderVisibility.activeKeys(
             providerDetails: periodAll.current.providerDetails,
             legacyProviders: periodAll.current.providers
         )
         let usageCounts = Dictionary(uniqueKeysWithValues: ProviderFilter.allCases.map { ($0, calls(for: $0) ?? 0) })
-        let detected = ProviderFilter.allCases.filter { filter in
-            filter == .all
-                || activeKeys.contains(filter.cliArg)
-                || filter.providerKeys.contains(where: activeKeys.contains)
-        }
+        let detected = ProviderFilter.allCases.filter { ProviderVisibility.shouldShowTab($0, activeKeys: activeKeys) }
         return detected.sorted { a, b in
             if a == .all { return true }
             if b == .all { return false }

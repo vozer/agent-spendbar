@@ -151,7 +151,7 @@ cat > "${BUNDLE}/Contents/Info.plist" <<PLIST
     <key>LSMinimumSystemVersion</key><string>${MIN_MACOS}</string>
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
-    <key>NSHumanReadableCopyright</key><string>© AgentSeal</string>
+    <key>NSHumanReadableCopyright</key><string>© Agent Spendbar contributors</string>
 </dict>
 </plist>
 PLIST

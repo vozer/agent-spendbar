@@ -463,7 +463,7 @@ export function Sessions({
           )}
         </>
       )}
-      {openRow && !hasSessionView(openRow) && (
+      {openRow && (
         <SessionDrawer
           row={openRow}
           openKey={sessionRowKey(openRow)}

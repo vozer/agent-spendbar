@@ -534,6 +534,11 @@ func isEstimatedCost(_ cost: Double, _ estimatedCostUSD: Double?, shown: String)
 }
 
 enum ProviderVisibility {
+    static func shouldShowTab(_ filter: ProviderFilter, activeKeys: Set<String>) -> Bool {
+        if filter == .all || filter == .claude || filter == .codex || filter == .cursor { return true }
+        return activeKeys.contains(filter.cliArg) || filter.providerKeys.contains(where: activeKeys.contains)
+    }
+
     static func activeKeys(
         providerDetails: [ProviderDetail],
         legacyProviders: [String: Double]

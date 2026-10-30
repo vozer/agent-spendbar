@@ -219,7 +219,7 @@
 "Change accent color" = "Changer la couleur d'accent";
 "Copy update command to clipboard" = "Copier la commande de mise à jour";
 "Enjoying Agent Spendbar?" = "Agent Spendbar vous plaît ?";
-"Agent Spendbar is a fork of CodeBurn by AgentSeal. MIT License." = "Agent Spendbar est une version dérivée de CodeBurn par AgentSeal. Licence MIT.";
+"Agent Spendbar is based on CodeBurn by AgentSeal and Codex Spendbar by vozer. MIT License." = "Agent Spendbar s’appuie sur CodeBurn par AgentSeal et Codex Spendbar par vozer. Licence MIT.";
 "Agent Spendbar" = "Agent Spendbar";
 "Monthly budgets at a glance" = "Budgets mensuels en un coup d’œil";
 "Star us on GitHub" = "Mettez-nous une étoile sur GitHub";
@@ -582,7 +582,7 @@
 "CLI" = "CLI";
 "API" = "API";
 "Version %@" = "Version %@";
-"%@ is available. Choose Check for Updates in the CodeBurn menu to install it." = "%@ est disponible. Choisissez Rechercher des mises à jour dans le menu CodeBurn pour l'installer.";
+"%@ is available. Choose Check for Updates in the Agent Spendbar menu to install it." = "%@ est disponible. Choisissez Rechercher des mises à jour dans le menu Agent Spendbar pour l'installer.";
 "GitHub" = "GitHub";
 "Issues" = "Problèmes";
 "Links" = "Liens";

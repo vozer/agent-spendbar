@@ -74,7 +74,7 @@ export function Sidebar({
     <>
       <nav className={collapsed ? 'sb collapsed' : 'sb'}>
         <div className="app">
-          <b className="flame-text">CodeBurn</b>
+          <b className="flame-text">Agent Spendbar</b>
           <button
             type="button"
             className="sb-collapse"

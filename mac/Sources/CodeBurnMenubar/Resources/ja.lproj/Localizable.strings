@@ -219,7 +219,7 @@
 "Change accent color" = "アクセントカラーを変更";
 "Copy update command to clipboard" = "更新コマンドをクリップボードにコピー";
 "Enjoying Agent Spendbar?" = "Agent Spendbarを気に入っていますか？";
-"Agent Spendbar is a fork of CodeBurn by AgentSeal. MIT License." = "Agent Spendbar は AgentSeal による CodeBurn の派生版です。MIT ライセンス。";
+"Agent Spendbar is based on CodeBurn by AgentSeal and Codex Spendbar by vozer. MIT License." = "Agent Spendbar は AgentSeal の CodeBurn と vozer の Codex Spendbar を基盤にしています。MIT ライセンス。";
 "Agent Spendbar" = "Agent Spendbar";
 "Monthly budgets at a glance" = "月間予算をひと目で";
 "Star us on GitHub" = "GitHubでスターをつける";
@@ -582,7 +582,7 @@
 "CLI" = "CLI";
 "API" = "API";
 "Version %@" = "バージョン %@";
-"%@ is available. Choose Check for Updates in the CodeBurn menu to install it." = "%@が利用可能です。CodeBurnメニューの「更新を確認」からインストールしてください。";
+"%@ is available. Choose Check for Updates in the Agent Spendbar menu to install it." = "%@が利用可能です。Agent Spendbarメニューの「更新を確認」からインストールしてください。";
 "GitHub" = "GitHub";
 "Issues" = "問題を報告";
 "Links" = "リンク";
