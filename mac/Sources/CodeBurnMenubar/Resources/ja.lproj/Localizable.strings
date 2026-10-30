@@ -214,7 +214,6 @@
 "Couldn't load %@" = "%@を読み込めませんでした";
 "Retry" = "再試行";
 "Loading %@…" = "%@を読み込み中…";
-"Your AI Bill, Itemized" = "AI利用料の内訳";
 "%1$@ over limit (%2$lld%%)" = "%1$@が上限超過（%2$lld%%）";
 "resets in %@" = "%@後にリセット";
 "Change accent color" = "アクセントカラーを変更";
@@ -228,15 +227,12 @@
 "CSV (folder)" = "CSV（フォルダ）";
 "JSON" = "JSON";
 "Export" = "書き出す";
-"Full Report" = "完全なレポート";
 
 /* MARK: Hero section */
 "%@ call" = "%@回の呼び出し";
 "%@ calls" = "%@回の呼び出し";
-"Daily budget of %@ exceeded" = "1日の予算%@を超過";
 "Combined unavailable · showing local" = "合算不可 · ローカルを表示中";
 "Combined · %@" = "合算 · %@";
-"Saved %@ with local models" = "ローカルモデルで%@節約";
 "%1$lld of %2$lld devices" = "%1$lld/%2$lld台のデバイス";
 "%@ · local" = "%@ · ローカル";
 
@@ -260,22 +256,17 @@
 
 /* MARK: Activity section */
 "Activity" = "アクティビティ";
-"Cost" = "コスト";
 "Turns" = "ターン数";
 "1-shot" = "一発成功";
 
 /* MARK: Models section */
 "Models" = "モデル";
-"Saved" = "節約額";
 "Calls" = "呼び出し";
 "Tokens" = "トークン";
 "%@ in" = "入力 %@";
 "%@ out" = "出力 %@";
 "%1$@ in · %2$@ out · %3$@ cache read" = "入力 %1$@ · 出力 %2$@ · キャッシュ読取 %3$@";
 "%@%% cache hit" = "キャッシュヒット率 %@%%";
-"1 model unpriced, counted at $0 · %@ tokens" = "価格未設定のモデル1件、$0として計上 · %@トークン";
-"%1$lld models unpriced, counted at $0 · %2$@ tokens" = "価格未設定のモデル%1$lld件、$0として計上 · %2$@トークン";
-"~ estimated cost (priced from estimated tokens)" = "~ 推定コスト（推定トークン数から算出）";
 
 /* MARK: Pull requests section */
 "Pull requests" = "プルリクエスト";
@@ -327,7 +318,6 @@
 "No tracked usage" = "追跡された使用量なし";
 "%@: future day" = "%@：未来の日付";
 "%@: no tracked usage" = "%@：追跡された使用量なし";
-"%1$@: %2$@, %3$lld calls, %4$@ tokens" = "%1$@：%2$@、%3$lld回の呼び出し、%4$@トークン";
 "Month-to-date" = "月初来";
 "On pace for" = "このペースだと";
 "Avg/day (this wk)" = "1日平均（今週）";
@@ -335,8 +325,6 @@
 "no prior month" = "前月データなし";
 "%1$@%% vs last month (%2$@)" = "%1$@%%（前月比、%2$@）";
 "Cache hit" = "キャッシュヒット";
-"Cost / session" = "セッションあたりコスト";
-"Cost/edit" = "編集あたりコスト";
 "Save ~%1$@ / ~%2$@ tokens · 1 finding" = "約%1$@ / 約%2$@トークンを節約可能 · 1件の指摘";
 "Save ~%1$@ / ~%2$@ tokens · %3$lld findings" = "約%1$@ / 約%2$@トークンを節約可能 · %3$lld件の指摘";
 "Favorite model" = "よく使うモデル";
@@ -456,9 +444,6 @@
    出すことしかできない場合に使用します。 */
 "Open in %@" = "%@で開く";
 "Bring %@ to front" = "%@を前面に表示";
-"burned" = "消費済み";
-"today %1$@ of %2$@" = "今日 %1$@ / %2$@";
-"no budget set" = "予算未設定";
 "Refreshing…" = "更新中…";
 "Last known usage · refreshing" = "最後に確認した使用量 · 更新中";
 "Last known usage · retrying" = "最後に確認した使用量 · 再試行中";
@@ -684,7 +669,6 @@
 "%lldh ago" = "%lld時間前";
 "%lldd ago" = "%lld日前";
 "in under a minute" = "1分以内";
-"Input tokens reused from this provider's prompt cache today — not fresh input (arrow.down), not cache writes, and already priced at the cache-read rate inside the burned figure." = "今日このプロバイダーのプロンプトキャッシュから再利用された入力トークンです。新規入力（arrow.down）でもキャッシュ書き込みでもなく、消費額の数値の中ですでにキャッシュ読取レートで計上済みです。";
 
 /* MARK: Quota crossing notifications */
 "%1$@ · %2$@ at 80%%" = "%1$@ · %2$@が80%%到達";

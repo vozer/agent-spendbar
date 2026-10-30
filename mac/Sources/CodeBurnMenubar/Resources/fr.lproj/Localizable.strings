@@ -214,7 +214,6 @@
 "Couldn't load %@" = "Impossible de charger %@";
 "Retry" = "Réessayer";
 "Loading %@…" = "Chargement de %@…";
-"Your AI Bill, Itemized" = "Votre facture IA, détaillée";
 "%1$@ over limit (%2$lld%%)" = "%1$@ au-delà de la limite (%2$lld%%)";
 "resets in %@" = "réinitialisation dans %@";
 "Change accent color" = "Changer la couleur d'accent";
@@ -228,15 +227,12 @@
 "CSV (folder)" = "CSV (dossier)";
 "JSON" = "JSON";
 "Export" = "Exporter";
-"Full Report" = "Rapport complet";
 
 /* MARK: Hero section */
 "%@ call" = "%@ appel";
 "%@ calls" = "%@ appels";
-"Daily budget of %@ exceeded" = "Budget quotidien de %@ dépassé";
 "Combined unavailable · showing local" = "Combiné indisponible · affichage local";
 "Combined · %@" = "Combiné · %@";
-"Saved %@ with local models" = "%@ économisés avec des modèles locaux";
 "%1$lld of %2$lld devices" = "%1$lld appareil(s) sur %2$lld";
 "%@ · local" = "%@ · local";
 
@@ -260,22 +256,17 @@
 
 /* MARK: Activity section */
 "Activity" = "Activité";
-"Cost" = "Coût";
 "Turns" = "Tours";
 "1-shot" = "1er coup";
 
 /* MARK: Models section */
 "Models" = "Modèles";
-"Saved" = "Économisé";
 "Calls" = "Appels";
 "Tokens" = "Tokens";
 "%@ in" = "%@ entrée";
 "%@ out" = "%@ sortie";
 "%1$@ in · %2$@ out · %3$@ cache read" = "%1$@ entrée · %2$@ sortie · %3$@ lecture cache";
 "%@%% cache hit" = "%@%% de cache";
-"1 model unpriced, counted at $0 · %@ tokens" = "1 modèle non tarifé, compté à 0 $ · %@ tokens";
-"%1$lld models unpriced, counted at $0 · %2$@ tokens" = "%1$lld modèles non tarifés, comptés à 0 $ · %2$@ tokens";
-"~ estimated cost (priced from estimated tokens)" = "~ coût estimé (calculé à partir de jetons estimés)";
 
 /* MARK: Pull requests section */
 "Pull requests" = "Pull requests";
@@ -327,7 +318,6 @@
 "No tracked usage" = "Aucun usage suivi";
 "%@: future day" = "%@ : jour futur";
 "%@: no tracked usage" = "%@ : aucun usage suivi";
-"%1$@: %2$@, %3$lld calls, %4$@ tokens" = "%1$@ : %2$@, %3$lld appels, %4$@ tokens";
 "Month-to-date" = "Depuis le début du mois";
 "On pace for" = "En rythme pour";
 "Avg/day (this wk)" = "Moy./jour (cette sem.)";
@@ -335,8 +325,6 @@
 "no prior month" = "pas de mois précédent";
 "%1$@%% vs last month (%2$@)" = "%1$@%% vs mois dernier (%2$@)";
 "Cache hit" = "Cache touché";
-"Cost / session" = "Coût / session";
-"Cost/edit" = "Coût/modif";
 "Save ~%1$@ / ~%2$@ tokens · 1 finding" = "Économie ~%1$@ / ~%2$@ tokens · 1 constat";
 "Save ~%1$@ / ~%2$@ tokens · %3$lld findings" = "Économie ~%1$@ / ~%2$@ tokens · %3$lld constats";
 "Favorite model" = "Modèle favori";
@@ -456,9 +444,6 @@
    session's tab, only come forward. */
 "Open in %@" = "Ouvrir dans %@";
 "Bring %@ to front" = "Mettre %@ au premier plan";
-"burned" = "consommé";
-"today %1$@ of %2$@" = "aujourd'hui %1$@ sur %2$@";
-"no budget set" = "aucun budget défini";
 "Refreshing…" = "Actualisation…";
 "Last known usage · refreshing" = "Dernier usage connu · actualisation";
 "Last known usage · retrying" = "Dernier usage connu · nouvel essai";
@@ -684,7 +669,6 @@
 "%lldh ago" = "il y a %lldh";
 "%lldd ago" = "il y a %lldj";
 "in under a minute" = "en moins d'une minute";
-"Input tokens reused from this provider's prompt cache today — not fresh input (arrow.down), not cache writes, and already priced at the cache-read rate inside the burned figure." = "Tokens d'entrée réutilisés aujourd'hui depuis le cache de prompts de ce fournisseur — pas une entrée fraîche (arrow.down), pas une écriture de cache, et déjà tarifés au taux de lecture cache dans le chiffre consommé.";
 
 /* MARK: Quota crossing notifications */
 "%1$@ · %2$@ at 80%%" = "%1$@ · %2$@ à 80%%";

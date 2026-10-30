@@ -221,7 +221,6 @@
 "Couldn't load %@" = "Couldn't load %@";
 "Retry" = "Retry";
 "Loading %@…" = "Loading %@…";
-"Your AI Bill, Itemized" = "Your AI Bill, Itemized";
 "%1$@ over limit (%2$lld%%)" = "%1$@ over limit (%2$lld%%)";
 "resets in %@" = "resets in %@";
 "Change accent color" = "Change accent color";
@@ -235,15 +234,12 @@
 "CSV (folder)" = "CSV (folder)";
 "JSON" = "JSON";
 "Export" = "Export";
-"Full Report" = "Full Report";
 
 /* MARK: Hero section */
 "%@ call" = "%@ call";
 "%@ calls" = "%@ calls";
-"Daily budget of %@ exceeded" = "Daily budget of %@ exceeded";
 "Combined unavailable · showing local" = "Combined unavailable · showing local";
 "Combined · %@" = "Combined · %@";
-"Saved %@ with local models" = "Saved %@ with local models";
 "%1$lld of %2$lld devices" = "%1$lld of %2$lld devices";
 "%@ · local" = "%@ · local";
 
@@ -267,22 +263,17 @@
 
 /* MARK: Activity section */
 "Activity" = "Activity";
-"Cost" = "Cost";
 "Turns" = "Turns";
 "1-shot" = "1-shot";
 
 /* MARK: Models section */
 "Models" = "Models";
-"Saved" = "Saved";
 "Calls" = "Calls";
 "Tokens" = "Tokens";
 "%@ in" = "%@ in";
 "%@ out" = "%@ out";
 "%1$@ in · %2$@ out · %3$@ cache read" = "%1$@ in · %2$@ out · %3$@ cache read";
 "%@%% cache hit" = "%@%% cache hit";
-"1 model unpriced, counted at $0 · %@ tokens" = "1 model unpriced, counted at $0 · %@ tokens";
-"%1$lld models unpriced, counted at $0 · %2$@ tokens" = "%1$lld models unpriced, counted at $0 · %2$@ tokens";
-"~ estimated cost (priced from estimated tokens)" = "~ estimated cost (priced from estimated tokens)";
 
 /* MARK: Pull requests section */
 "Pull requests" = "Pull requests";
@@ -334,7 +325,6 @@
 "No tracked usage" = "No tracked usage";
 "%@: future day" = "%@: future day";
 "%@: no tracked usage" = "%@: no tracked usage";
-"%1$@: %2$@, %3$lld calls, %4$@ tokens" = "%1$@: %2$@, %3$lld calls, %4$@ tokens";
 "Month-to-date" = "Month-to-date";
 "On pace for" = "On pace for";
 "Avg/day (this wk)" = "Avg/day (this wk)";
@@ -342,8 +332,6 @@
 "no prior month" = "no prior month";
 "%1$@%% vs last month (%2$@)" = "%1$@%% vs last month (%2$@)";
 "Cache hit" = "Cache hit";
-"Cost / session" = "Cost / session";
-"Cost/edit" = "Cost/edit";
 "Save ~%1$@ / ~%2$@ tokens · 1 finding" = "Save ~%1$@ / ~%2$@ tokens · 1 finding";
 "Save ~%1$@ / ~%2$@ tokens · %3$lld findings" = "Save ~%1$@ / ~%2$@ tokens · %3$lld findings";
 "Favorite model" = "Favorite model";
@@ -463,9 +451,6 @@
    session's tab, only come forward. */
 "Open in %@" = "Open in %@";
 "Bring %@ to front" = "Bring %@ to front";
-"burned" = "burned";
-"today %1$@ of %2$@" = "today %1$@ of %2$@";
-"no budget set" = "no budget set";
 "Refreshing…" = "Refreshing…";
 "Last known usage · refreshing" = "Last known usage · refreshing";
 "Last known usage · retrying" = "Last known usage · retrying";
@@ -691,7 +676,6 @@
 "%lldh ago" = "%lldh ago";
 "%lldd ago" = "%lldd ago";
 "in under a minute" = "in under a minute";
-"Input tokens reused from this provider's prompt cache today — not fresh input (arrow.down), not cache writes, and already priced at the cache-read rate inside the burned figure." = "Input tokens reused from this provider's prompt cache today — not fresh input (arrow.down), not cache writes, and already priced at the cache-read rate inside the burned figure.";
 
 /* MARK: Quota crossing notifications */
 "%1$@ · %2$@ at 80%%" = "%1$@ · %2$@ at 80%%";

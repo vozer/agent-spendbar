@@ -215,7 +215,6 @@
 "Couldn't load %@" = "无法载入%@";
 "Retry" = "重试";
 "Loading %@…" = "正在载入%@…";
-"Your AI Bill, Itemized" = "你的 AI 账单，逐项明细";
 "%1$@ over limit (%2$lld%%)" = "%1$@ 已超限（%2$lld%%）";
 "resets in %@" = "%@后重置";
 "Change accent color" = "更改主题色";
@@ -229,15 +228,12 @@
 "CSV (folder)" = "CSV（文件夹）";
 "JSON" = "JSON";
 "Export" = "导出";
-"Full Report" = "完整报告";
 
 /* MARK: Hero section */
 "%@ call" = "%@ 次调用";
 "%@ calls" = "%@ 次调用";
-"Daily budget of %@ exceeded" = "已超出每日预算 %@";
 "Combined unavailable · showing local" = "合并数据不可用 · 显示本机数据";
 "Combined · %@" = "合并 · %@";
-"Saved %@ with local models" = "使用本地模型节省了 %@";
 "%1$lld of %2$lld devices" = "%1$lld/%2$lld 台设备";
 "%@ · local" = "%@ · 本机";
 
@@ -261,22 +257,17 @@
 
 /* MARK: Activity section */
 "Activity" = "活动";
-"Cost" = "花费";
 "Turns" = "轮次";
 "1-shot" = "一次通过";
 
 /* MARK: Models section */
 "Models" = "模型";
-"Saved" = "已节省";
 "Calls" = "调用";
 "Tokens" = "Token";
 "%@ in" = "输入 %@";
 "%@ out" = "输出 %@";
 "%1$@ in · %2$@ out · %3$@ cache read" = "输入 %1$@ · 输出 %2$@ · 缓存读取 %3$@";
 "%@%% cache hit" = "缓存命中 %@%%";
-"1 model unpriced, counted at $0 · %@ tokens" = "1 个模型无定价，按 $0 计入 · %@ Token";
-"%1$lld models unpriced, counted at $0 · %2$@ tokens" = "%1$lld 个模型无定价，按 $0 计入 · %2$@ Token";
-"~ estimated cost (priced from estimated tokens)" = "~ 估算成本（按估算的 Token 数计价）";
 
 /* MARK: Pull requests section */
 "Pull requests" = "拉取请求";
@@ -328,7 +319,6 @@
 "No tracked usage" = "无跟踪到的用量";
 "%@: future day" = "%@：未来日期";
 "%@: no tracked usage" = "%@：无跟踪到的用量";
-"%1$@: %2$@, %3$lld calls, %4$@ tokens" = "%1$@：%2$@，%3$lld 次调用，%4$@ Token";
 "Month-to-date" = "本月至今";
 "On pace for" = "预计本月";
 "Avg/day (this wk)" = "日均（本周）";
@@ -336,8 +326,6 @@
 "no prior month" = "无上月数据";
 "%1$@%% vs last month (%2$@)" = "%1$@%% 较上月（%2$@）";
 "Cache hit" = "缓存命中";
-"Cost / session" = "每会话花费";
-"Cost/edit" = "每次编辑花费";
 "Save ~%1$@ / ~%2$@ tokens · 1 finding" = "可省约 %1$@ / 约 %2$@ Token · 1 项建议";
 "Save ~%1$@ / ~%2$@ tokens · %3$lld findings" = "可省约 %1$@ / 约 %2$@ Token · %3$lld 项建议";
 "Favorite model" = "最常用模型";
@@ -455,9 +443,6 @@
 /* 运行中会话行的提示。%@ 为终端应用自身的名称，保持原样。 */
 "Open in %@" = "在 %@ 中打开";
 "Bring %@ to front" = "将 %@ 切换到前台";
-"burned" = "已消耗";
-"today %1$@ of %2$@" = "今天 %1$@ / %2$@";
-"no budget set" = "未设置预算";
 "Refreshing…" = "正在刷新…";
 "Last known usage · refreshing" = "最近已知用量 · 正在刷新";
 "Last known usage · retrying" = "最近已知用量 · 正在重试";
@@ -682,7 +667,6 @@
 "%lldh ago" = "%lld 小时前";
 "%lldd ago" = "%lld 天前";
 "in under a minute" = "不到一分钟后";
-"Input tokens reused from this provider's prompt cache today — not fresh input (arrow.down), not cache writes, and already priced at the cache-read rate inside the burned figure." = "今天从该服务商提示缓存中复用的输入 Token。不是新的输入（arrow.down），也不是缓存写入，并且已按缓存读取费率计入已消耗金额。";
 
 /* MARK: Quota crossing notifications */
 "%1$@ · %2$@ at 80%%" = "%1$@ · %2$@ 已达 80%%";

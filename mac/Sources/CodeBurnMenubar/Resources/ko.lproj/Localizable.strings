@@ -214,7 +214,6 @@
 "Couldn't load %@" = "%@을(를) 불러올 수 없음";
 "Retry" = "재시도";
 "Loading %@…" = "%@ 불러오는 중…";
-"Your AI Bill, Itemized" = "AI 사용 내역, 항목별로";
 "%1$@ over limit (%2$lld%%)" = "%1$@ 한도 초과 (%2$lld%%)";
 "resets in %@" = "%@ 후 초기화";
 "Change accent color" = "강조 색상 변경";
@@ -228,15 +227,12 @@
 "CSV (folder)" = "CSV (폴더)";
 "JSON" = "JSON";
 "Export" = "내보내기";
-"Full Report" = "전체 리포트";
 
 /* MARK: Hero section */
 "%@ call" = "%@회 호출";
 "%@ calls" = "%@회 호출";
-"Daily budget of %@ exceeded" = "일일 예산 %@ 초과";
 "Combined unavailable · showing local" = "통합 데이터 없음 · 로컬 데이터 표시";
 "Combined · %@" = "통합 · %@";
-"Saved %@ with local models" = "로컬 모델로 %@ 절약";
 "%1$lld of %2$lld devices" = "%2$lld대 중 %1$lld대 기기";
 "%@ · local" = "%@ · 로컬";
 
@@ -260,22 +256,17 @@
 
 /* MARK: Activity section */
 "Activity" = "활동";
-"Cost" = "비용";
 "Turns" = "턴 수";
 "1-shot" = "단번 성공";
 
 /* MARK: Models section */
 "Models" = "모델";
-"Saved" = "절약";
 "Calls" = "호출";
 "Tokens" = "토큰";
 "%@ in" = "입력 %@";
 "%@ out" = "출력 %@";
 "%1$@ in · %2$@ out · %3$@ cache read" = "입력 %1$@ · 출력 %2$@ · 캐시 읽기 %3$@";
 "%@%% cache hit" = "캐시 적중률 %@%%";
-"1 model unpriced, counted at $0 · %@ tokens" = "모델 1개 가격 미정, $0으로 계산 · %@ 토큰";
-"%1$lld models unpriced, counted at $0 · %2$@ tokens" = "모델 %1$lld개 가격 미정, $0으로 계산 · %2$@ 토큰";
-"~ estimated cost (priced from estimated tokens)" = "~ 추정 비용(추정 토큰 수로 산출)";
 
 /* MARK: Pull requests section */
 "Pull requests" = "풀 리퀘스트";
@@ -327,7 +318,6 @@
 "No tracked usage" = "추적된 사용량 없음";
 "%@: future day" = "%@: 미래 날짜";
 "%@: no tracked usage" = "%@: 추적된 사용량 없음";
-"%1$@: %2$@, %3$lld calls, %4$@ tokens" = "%1$@: %2$@, %3$lld회 호출, %4$@ 토큰";
 "Month-to-date" = "이번 달 누계";
 "On pace for" = "예상치";
 "Avg/day (this wk)" = "일평균 (이번 주)";
@@ -335,8 +325,6 @@
 "no prior month" = "이전 달 데이터 없음";
 "%1$@%% vs last month (%2$@)" = "%1$@%% (지난달 %2$@ 대비)";
 "Cache hit" = "캐시 적중";
-"Cost / session" = "세션당 비용";
-"Cost/edit" = "편집당 비용";
 "Save ~%1$@ / ~%2$@ tokens · 1 finding" = "약 %1$@ / 약 %2$@ 토큰 절약 가능 · 발견 사항 1건";
 "Save ~%1$@ / ~%2$@ tokens · %3$lld findings" = "약 %1$@ / 약 %2$@ 토큰 절약 가능 · 발견 사항 %3$lld건";
 "Favorite model" = "가장 많이 쓴 모델";
@@ -456,9 +444,6 @@
    session's tab, only come forward. */
 "Open in %@" = "%@에서 열기";
 "Bring %@ to front" = "%@ 앞으로 가져오기";
-"burned" = "소진됨";
-"today %1$@ of %2$@" = "오늘 %2$@ 중 %1$@";
-"no budget set" = "설정된 예산 없음";
 "Refreshing…" = "새로고침 중…";
 "Last known usage · refreshing" = "마지막 확인된 사용량 · 새로고침 중";
 "Last known usage · retrying" = "마지막 확인된 사용량 · 재시도 중";
@@ -684,7 +669,6 @@
 "%lldh ago" = "%lld시간 전";
 "%lldd ago" = "%lld일 전";
 "in under a minute" = "1분 이내";
-"Input tokens reused from this provider's prompt cache today — not fresh input (arrow.down), not cache writes, and already priced at the cache-read rate inside the burned figure." = "오늘 이 제공업체의 프롬프트 캐시에서 재사용된 입력 토큰입니다 — 새 입력(arrow.down)도 캐시 쓰기도 아니며, 소진 금액에 이미 캐시 읽기 요율로 계산되어 있습니다.";
 
 /* MARK: Quota crossing notifications */
 "%1$@ · %2$@ at 80%%" = "%1$@ · %2$@ 80%% 도달";
