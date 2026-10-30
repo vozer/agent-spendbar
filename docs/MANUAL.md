@@ -20,13 +20,26 @@ The app counts usage from the first day of the calendar month through today. Mis
 
 ## Install the macOS build
 
-Signed public releases are not configured yet. The GitHub Actions artifact is the current installable build and expires after one day.
+Download the [prebuilt Agent Spendbar app for macOS](https://raw.githubusercontent.com/vozer/agent-spendbar/main/downloads/AgentSpendbar-macos.zip). The ZIP contains `AgentSpendbar.app`. You do not need Node.js or a source build.
 
-Open Actions in the [Agent Spendbar repository](https://github.com/vozer/agent-spendbar/actions). Select a successful macOS Menubar CI run. Download the `AgentSpendbar-macos` artifact. Unzip it and move `AgentSpendbar.app` to `~/Applications`.
+1. Download and open the ZIP.
+2. Move `AgentSpendbar.app` to `/Applications` or `~/Applications`.
+3. Open Agent Spendbar from that folder.
+
+### If macOS blocks the first launch
+
+macOS marks browser downloads with quarantine. This build is ad-hoc signed and not notarized, so macOS may block its first launch.
+
+1. Try opening the app once.
+2. Open Apple menu > System Settings > Privacy & Security.
+3. Scroll to Security and choose **Open Anyway** beside Agent Spendbar.
+4. Choose **Open** in the warning.
+
+Apple keeps **Open Anyway** available for about one hour after you try launching the app. macOS saves your approval for future launches. Only approve a copy downloaded from this repository. See [Apple's instructions for opening blocked apps](https://support.apple.com/en-us/102445).
 
 The app is ad-hoc signed in CI. macOS may ask for local data access again after an update.
 
-## Build from source
+## Developer setup: build from source
 
 Install Node.js 22.13 or newer and Swift 6. Build the local CLI before starting the app.
 

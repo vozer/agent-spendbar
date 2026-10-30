@@ -22,7 +22,26 @@ The menu bar keeps All, Codex, Claude, and Cursor tabs visible, including provid
 
 The app marks estimates or partial data with `~`. An unavailable value means local usage data is missing. CodeBurn reads local provider data and does not upload prompts or source files.
 
-## Run from source
+## Install the macOS app
+
+[Download Agent Spendbar for macOS](https://raw.githubusercontent.com/vozer/agent-spendbar/main/downloads/AgentSpendbar-macos.zip). The ZIP contains a ready-to-run `AgentSpendbar.app`. You do not need Node.js or a source build.
+
+1. Download and open the ZIP.
+2. Move `AgentSpendbar.app` to `/Applications` or `~/Applications`.
+3. Open Agent Spendbar from that folder.
+
+### If macOS blocks the first launch
+
+macOS marks browser downloads with quarantine. This build is ad-hoc signed and not notarized, so macOS may block its first launch.
+
+1. Try opening the app once.
+2. Open Apple menu > System Settings > Privacy & Security.
+3. Scroll to Security and choose **Open Anyway** beside Agent Spendbar.
+4. Choose **Open** in the warning.
+
+Apple keeps **Open Anyway** available for about one hour after you try launching the app. macOS saves your approval for future launches. Only approve a copy downloaded from this repository. See [Apple's instructions for opening blocked apps](https://support.apple.com/en-us/102445).
+
+## Run from source (development)
 
 Install Node.js 22.13 or newer and Swift 6. Then run:
 
@@ -37,4 +56,4 @@ The `--keep-both` flag lets Agent Spendbar run beside the original CodeBurn menu
 
 ## Upstream documentation
 
-The CLI and provider documentation remains based on CodeBurn. Start with the [CodeBurn manual](https://github.com/getagentseal/codeburn/blob/main/README.md) for CLI commands and provider data details. Signed public releases are not configured yet; the macOS CI workflow provides a short-lived build artifact.
+The CLI and provider documentation remains based on CodeBurn. Start with the [CodeBurn manual](https://github.com/getagentseal/codeburn/blob/main/README.md) for CLI commands and provider data details.
