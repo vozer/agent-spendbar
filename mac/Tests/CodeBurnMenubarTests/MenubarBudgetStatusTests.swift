@@ -23,7 +23,7 @@ struct MenubarBudgetStatusTests {
         let (defaults, suiteName) = TestDefaults.make("AgentSpendbarBudget.\(#function)")
         defer { TestDefaults.forget(suiteName) }
 
-        #expect(MenubarBudgetStatus.codexBudget(defaults: defaults) == 7000)
+        #expect(MenubarBudgetStatus.codexBudget(defaults: defaults) == 7800)
         defaults.set(2400, forKey: MenubarBudgetStatus.codexBudgetKey)
         #expect(MenubarBudgetStatus.codexBudget(defaults: defaults) == 2400)
         defaults.set(0, forKey: MenubarBudgetStatus.codexBudgetKey)
@@ -41,5 +41,10 @@ struct MenubarBudgetStatusTests {
         #expect(items.map(\.id) == ["codex", "claude", "cursor"])
         #expect(items.map(\.percentage) == ["~50%", "~25%", "~160%"])
         #expect(MenubarBudgetStatus.items(current: current, codexBudget: 7000, unavailable: true).allSatisfy { $0.percentage == "—" })
+    }
+
+    @Test("matches the reported 91 percent monthly Codex usage")
+    func reportedCodexPercentage() {
+        #expect(MenubarBudgetStatus.percentage(used: 7091, budget: 7800, estimated: true) == "~91%")
     }
 }

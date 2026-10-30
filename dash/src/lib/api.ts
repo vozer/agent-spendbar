@@ -48,6 +48,15 @@ export type Current = {
   cacheWriteTokens: number
   cacheHitPercent: number
   codexCredits: number
+  codexCreditsIncomplete?: boolean
+  codexCreditsEstimated?: boolean
+  providerDetails?: Array<{
+    id: string
+    label: string
+    cost: number
+    hasUsage?: boolean
+    estimatedCostUSD?: number
+  }>
   topActivities: Array<{ name: string; cost: number; turns: number; oneShotRate: number | null }>
   topModels: Array<{ name: string; cost: number; calls: number; savingsUSD: number }>
   providers: Record<string, number>
@@ -147,6 +156,9 @@ function normalizePayload(p?: Payload): Payload | undefined {
       cacheWriteTokens: c.cacheWriteTokens ?? 0,
       cacheHitPercent: c.cacheHitPercent ?? 0,
       codexCredits: c.codexCredits ?? 0,
+      codexCreditsIncomplete: c.codexCreditsIncomplete,
+      codexCreditsEstimated: c.codexCreditsEstimated,
+      providerDetails: c.providerDetails ?? [],
       topActivities: c.topActivities ?? [],
       topModels: c.topModels ?? [],
       providers: c.providers ?? {},

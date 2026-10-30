@@ -1,16 +1,16 @@
 # Agent Spendbar
 
-Agent Spendbar is a public fork of [CodeBurn](https://github.com/getagentseal/codeburn). It adds three monthly budget indicators to the macOS menu bar for Codex, Claude Code, and Cursor.
+Agent Spendbar is a public fork of [CodeBurn](https://github.com/getagentseal/codeburn). Its menu bar and dashboards show monthly usage percentages for Codex, Claude Code, and Cursor.
 
 ## What the menu bar shows
 
 Each provider icon is followed by the percentage of its current calendar month's budget used. Values above 100% remain visible.
 
-- **Codex** uses priced credits from local CodeBurn history and the monthly credit budget saved by [Codex Spend](https://github.com/vozer/codex-spendbar). The default budget is 7,000 credits. Incomplete pricing shows the known amount with `~`.
+- **Codex** uses published credit rates from local CodeBurn history and the monthly credit budget saved by [Codex Spend](https://github.com/vozer/codex-spendbar). The local default is 7,800 credits. It is not an OpenAI account limit. Partial pricing shows the known amount with `~`.
 - **Claude** compares CodeBurn's local session cost estimate with a $100 budget. It always shows `~` because this is not Claude's billed total.
 - **Cursor** combines Cursor and Cursor Agent usage against a $100 budget. Cursor's usage export supplies billed cost when available. Included or local-only usage uses model-price estimates and shows `~`.
 
-A dash means data is missing or stale. Cursor data comes from the Cursor installation and login on this Mac. CodeBurn reads local provider data and does not upload prompts or source files.
+An unavailable label means local usage data is missing. Stale or partial data shows `~` before the percentage. Cursor data comes from the Cursor installation and login on this Mac. CodeBurn reads local provider data and does not upload prompts or source files.
 
 ## Run from source
 

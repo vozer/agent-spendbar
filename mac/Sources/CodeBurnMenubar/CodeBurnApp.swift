@@ -13,8 +13,8 @@ private let statusPayloadRefreshWatchdogSeconds: TimeInterval = 60
 private let refreshRateLimitSeconds: TimeInterval = 5
 private let interactiveQuotaRefreshFloorSeconds: TimeInterval = 30
 private let statusItemWidth: CGFloat = NSStatusItem.variableLength
-private let popoverWidth: CGFloat = 360
-private let popoverHeight: CGFloat = 660
+private let popoverWidth: CGFloat = 320
+private let popoverHeight: CGFloat = 300
 private let menubarTitleFontSize: CGFloat = 13
 
 enum SubscriptionRefreshBackoff {
@@ -1111,15 +1111,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             // Combined-scope badge total: re-render the badge when the cross-device
             // aggregate for the menubar period lands (or a peer goes reachable).
             _ = self.store.menubarBadgeCombined
-            // Track currency so the menubar title catches up immediately on
-            // currency switch instead of waiting for the next 30s payload tick.
-            _ = self.store.currency
-            // Second-row settings: the title has to re-render the moment the
-            // toggle or its metric changes, not on the next payload tick.
-            _ = self.store.menubarSecondRowEnabled
-            _ = self.store.menubarSecondRowMetric
-            _ = self.store.dailyBudget
-            _ = self.store.dailyTokenBudget
             // Track live quota state so the optional detail row updates immediately.
             _ = self.store.subscription
             _ = self.store.subscriptionLoadState
@@ -1362,33 +1353,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         return symbol
     }
 
-    /// Typography for the one-row or two-row status-item title.
-    private struct MenubarTitleStyle {
-        let fontSize: CGFloat
-        let attachmentPointSize: CGFloat
-        let baselineOffset: CGFloat
-        let attachmentVerticalOffset: CGFloat
-
-        static let singleRow = MenubarTitleStyle(
-            fontSize: menubarTitleFontSize,
-            attachmentPointSize: menubarTitleFontSize,
-            baselineOffset: -1.0,
-            attachmentVerticalOffset: -3
-        )
-        static let twoRow = MenubarTitleStyle(
-            fontSize: MenubarRowTypography.twoRowFontSize,
-            attachmentPointSize: MenubarRowTypography.twoRowAttachmentPointSize,
-            baselineOffset: MenubarRowTypography.twoRowBaselineOffset,
-            attachmentVerticalOffset: MenubarRowTypography.twoRowAttachmentVerticalOffset
-        )
-    }
-
-    /// The button cell's single-line state as AppKit handed it to us, captured
-    /// before the two-row path ever touches it so turning the second row back
-    /// off restores the original rendering rather than a guessed default.
-    private var defaultTitleUsesSingleLineMode: Bool?
-    private var defaultTitleWraps: Bool?
-
     private func refreshStatusButton() {
         guard let button = statusItem.button else { return }
         // Skip while the popover is anchored to this button. Rewriting the
@@ -1403,105 +1367,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         button.image = nil
         button.imagePosition = .noImage
 
-        // nil whenever the setting is off or the chosen metric has no data, in
-        // which case the title falls back to the single-row composition.
-        // `menubarRowSnapshot` walks every provider's quota summary and reads
-        // the today block, so it is only built once the setting is on: with the
-        // row off a refresh costs no more than the bool it already reads.
-        let rowSettings = store.menubarRowSettings
-        let secondRow = rowSettings.isSecondRowEnabled
-            ? MenubarRowFormatter.secondRow(settings: rowSettings, snapshot: store.menubarRowSnapshot)
-            : nil
         let budgetItems = monthlyBudgetItems()
-        applyTitleLineMode(to: button, multiline: secondRow != nil)
-        let title = composeStatusTitle(
-            style: secondRow == nil ? .singleRow : .twoRow,
-            budgetItems: budgetItems,
-            secondRow: secondRow
-        )
+        let font = NSFont.monospacedDigitSystemFont(ofSize: menubarTitleFontSize, weight: .regular)
+        let textAttributes: [NSAttributedString.Key: Any] = [.font: font, .baselineOffset: -1.0]
+        let title = NSMutableAttributedString()
+        for (index, item) in budgetItems.enumerated() {
+            if index > 0 {
+                title.append(NSAttributedString(string: "  ", attributes: textAttributes))
+            }
+            let attachment = NSTextAttachment()
+            attachment.image = ProviderIconCache.image(named: item.id)
+            attachment.bounds = CGRect(x: 0, y: -3, width: menubarTitleFontSize, height: menubarTitleFontSize)
+            title.append(NSAttributedString(attachment: attachment))
+            title.append(NSAttributedString(string: " \(item.percentage)", attributes: textAttributes))
+        }
         button.attributedTitle = title
         let budgetLabel = budgetItems.map(\.accessibilityLabel).joined(separator: ", ")
-        let secondRowLabel = secondRow.map { MenubarRowFormatter.accessibilityLabel(title: $0) }
-        button.setAccessibilityLabel([budgetLabel, secondRowLabel].compactMap { $0 }.joined(separator: ", "))
+        button.setAccessibilityLabel(budgetLabel)
         let budgetSummary = budgetItems.map { "\($0.label) \($0.percentage)" }.joined(separator: " · ")
         button.toolTip = L("Agent Spendbar · Monthly budget · %@", budgetSummary)
 
         persistBadgeStatusFile()
-    }
-
-    /// A multi-line attributed title only renders once the cell stops forcing a
-    /// single line. Both states are applied explicitly so toggling the setting
-    /// at runtime never leaves the cell in the other mode.
-    private func applyTitleLineMode(to button: NSStatusBarButton, multiline: Bool) {
-        guard let cell = button.cell else { return }
-        if defaultTitleUsesSingleLineMode == nil {
-            defaultTitleUsesSingleLineMode = cell.usesSingleLineMode
-            defaultTitleWraps = cell.wraps
-        }
-        if multiline {
-            cell.usesSingleLineMode = false
-            cell.wraps = true
-        } else {
-            cell.usesSingleLineMode = defaultTitleUsesSingleLineMode ?? false
-            cell.wraps = defaultTitleWraps ?? false
-        }
-    }
-
-    /// Composes the three monthly provider budgets, then keeps the optional detail row.
-    private func composeStatusTitle(
-        style: MenubarTitleStyle,
-        budgetItems: [MenubarBudgetItem],
-        secondRow: String?
-    ) -> NSAttributedString {
-        let font = NSFont.monospacedDigitSystemFont(ofSize: style.fontSize, weight: .regular)
-        let composed = NSMutableAttributedString()
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .baselineOffset: style.baselineOffset,
-        ]
-        for (index, item) in budgetItems.enumerated() {
-            if index > 0 {
-                composed.append(NSAttributedString(string: "  ", attributes: textAttributes))
-            }
-
-            let attachment = NSTextAttachment()
-            attachment.image = ProviderIconCache.image(named: item.id)
-            let iconSize = min(style.fontSize - 1, style.attachmentPointSize)
-            attachment.bounds = CGRect(
-                x: 0,
-                y: style.attachmentVerticalOffset,
-                width: iconSize,
-                height: iconSize
-            )
-            composed.append(NSAttributedString(attachment: attachment))
-            composed.append(NSAttributedString(string: " \(item.percentage)", attributes: textAttributes))
-        }
-
-        guard let secondRow else { return composed }
-
-        var secondRowAttrs: [NSAttributedString.Key: Any] = [.font: font]
-        if style.baselineOffset != 0 {
-            secondRowAttrs[.baselineOffset] = style.baselineOffset
-        }
-        composed.append(NSAttributedString(string: "\n" + secondRow, attributes: secondRowAttrs))
-
-        // Centre both lines against each other and clamp their height: the
-        // status item is only as tall as the menu bar, and an unclamped 9pt
-        // line box (with its natural leading) pushes the pair past 22pt, which
-        // AppKit resolves by clipping the second line away.
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .center
-        paragraph.lineBreakMode = .byClipping
-        paragraph.lineSpacing = 0
-        paragraph.paragraphSpacing = 0
-        paragraph.minimumLineHeight = MenubarRowTypography.twoRowLineHeight
-        paragraph.maximumLineHeight = MenubarRowTypography.twoRowLineHeight
-        composed.addAttribute(
-            .paragraphStyle,
-            value: paragraph,
-            range: NSRange(location: 0, length: composed.length)
-        )
-        return composed
     }
 
     private func monthlyBudgetItems() -> [MenubarBudgetItem] {
@@ -1509,7 +1395,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         return MenubarBudgetStatus.items(
             current: payload?.current,
             codexBudget: MenubarBudgetStatus.codexBudget(),
-            unavailable: payload == nil || payload?.stale == true || payload?.hydration?.complete == false
+            unavailable: payload == nil,
+            estimatedFromPartial: payload?.stale == true || payload?.hydration?.complete == false
         )
     }
 
@@ -1550,10 +1437,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
     /// after being shown once during the first load (6 percent idle CPU until
     /// relaunch). Rebuilding a 360pt view on open is far cheaper than that.
     private func makePopoverContent() -> NSViewController {
-        let content = MenuBarContent()
-            .environment(store)
-            .environment(updateChecker)
-            .frame(width: popoverWidth)
+        let content = MonthlyUsagePopover(
+            items: monthlyBudgetItems(),
+            monthLabel: store.spendbarBudgetPayload?.current.label ?? "Calendar month to date"
+        )
 
         let hosting = NSHostingController(rootView: content)
         // Let the popover size itself from preferredContentSize only. With the

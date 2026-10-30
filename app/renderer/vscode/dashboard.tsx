@@ -3,7 +3,7 @@ import './install'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
-import { App } from '../App'
+import { MonthlyUsageApp } from '../MonthlyUsageApp'
 import { clearHeadlinesOnUpgrade } from '../lib/overviewSnapshot'
 import { installPageHiddenClass } from '../lib/pageVisibility'
 import { version } from '../../package.json'
@@ -16,6 +16,6 @@ installPageHiddenClass()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+      <MonthlyUsageApp />
   </StrictMode>,
 )

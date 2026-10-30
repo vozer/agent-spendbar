@@ -16,7 +16,7 @@ struct MenubarBudgetItem: Equatable, Sendable {
 enum MenubarBudgetStatus {
     static let codexBudgetSuite = "com.local.codex-spend"
     static let codexBudgetKey = "monthlyCreditBudgetCredits"
-    static let defaultCodexBudget = 7000.0
+    static let defaultCodexBudget = 7800.0
 
     static func codexBudget(defaults: UserDefaults? = UserDefaults(suiteName: codexBudgetSuite)) -> Double? {
         guard let defaults else { return nil }
@@ -41,7 +41,12 @@ enum MenubarBudgetStatus {
         return "\(estimated ? "~" : "")\(percent)%"
     }
 
-    static func items(current: CurrentBlock?, codexBudget: Double?, unavailable: Bool) -> [MenubarBudgetItem] {
+    static func items(
+        current: CurrentBlock?,
+        codexBudget: Double?,
+        unavailable: Bool,
+        estimatedFromPartial: Bool = false
+    ) -> [MenubarBudgetItem] {
         let providers = current?.providerDetails ?? []
         let codex = providers.first { $0.id == "codex" }
         let claude = providers.first { $0.id == "claude" }
@@ -49,12 +54,12 @@ enum MenubarBudgetStatus {
         return [
             item("codex", "Codex", used: codex == nil ? nil : current?.codexCredits,
                  budget: codexBudget,
-                 estimated: current?.codexCreditsEstimated == true || current?.codexCreditsIncomplete == true,
+                 estimated: estimatedFromPartial || current?.codexCreditsEstimated == true || current?.codexCreditsIncomplete == true,
                  incomplete: unavailable),
             item("claude", "Claude", used: claude?.cost, budget: 100,
                  estimated: true, incomplete: unavailable),
             item("cursor", "Cursor", used: cursor.isEmpty ? nil : cursor.reduce(0) { $0 + $1.cost }, budget: 100,
-                 estimated: cursor.contains { ($0.estimatedCostUSD ?? 0) > 0 }, incomplete: unavailable),
+                 estimated: estimatedFromPartial || cursor.contains { ($0.estimatedCostUSD ?? 0) > 0 }, incomplete: unavailable),
         ]
     }
 

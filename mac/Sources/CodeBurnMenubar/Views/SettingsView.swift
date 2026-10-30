@@ -361,14 +361,7 @@ private struct GeneralSettingsTab: View {
     @Environment(AppStore.self) private var store
     @Environment(UpdateChecker.self) private var updateChecker
 
-    // "Custom…" budget entry state, one per metric (cost in dollars, tokens in
-    // millions). When custom is active the picker shows "Custom…" and a field
-    // appears for an exact amount.
     @State private var language = LanguagePreference.current()
-    @State private var costCustom = false
-    @State private var tokenCustom = false
-    @State private var costText = ""
-    @State private var tokenText = ""
 
     // AppStorage (not a computed Binding over UsageRefreshCadence.current):
     // a plain UserDefaults write does not invalidate the view, so the picker
@@ -393,94 +386,9 @@ private struct GeneralSettingsTab: View {
     @AppStorage(QuotaCrossingPreference.defaultsKey)
     private var notifyAboutQuotaCrossings: Bool = true
 
-    private let costPresets: Set<Double> = [25, 50, 100, 200, 500]
-    private let tokenPresets: Set<Double> = [1_000_000, 5_000_000, 10_000_000, 25_000_000, 50_000_000, 100_000_000]
-
-    private func applyCostBudget() {
-        store.dailyBudget = max(0, Double(costText.trimmingCharacters(in: .whitespaces)) ?? 0)
-    }
-
-    private func applyTokenBudget() {
-        let millions = Double(tokenText.trimmingCharacters(in: .whitespaces)) ?? 0
-        store.dailyTokenBudget = max(0, millions * 1_000_000)
-    }
-
-    private func trimNumber(_ v: Double) -> String {
-        v == v.rounded() ? String(Int(v)) : String(v)
-    }
-
-    // Help text under the budget picker. When "Custom…" is selected but no amount
-    // has been entered, the budget is effectively 0 (off); call that out so the
-    // alert does not look armed when it isn't.
-    private var alertHelpText: String {
-        let customEmpty = store.isTokenMetric
-            ? (tokenCustom && store.dailyTokenBudget == 0)
-            : (costCustom && store.dailyBudget == 0)
-        if customEmpty { return L("Enter an amount above, or the alert stays off.") }
-        return store.isTokenMetric
-            ? L("Flame icon turns yellow when today's tokens pass the daily budget.")
-            : L("Flame icon turns yellow when today's cost pass the daily budget.")
-    }
-
     var body: some View {
         Form {
             Section(L("Display")) {
-                Picker(L("Currency"), selection: Binding(
-                    get: { store.currency },
-                    set: { applyCurrency(code: $0) }
-                )) {
-                    ForEach(SupportedCurrency.allCases) { currency in
-                        Text(currency.pickerLabel).tag(currency.rawValue)
-                    }
-                }
-                Picker(L("Metric"), selection: Binding(
-                    get: { store.displayMetric },
-                    set: { store.displayMetric = $0 }
-                )) {
-                    Text(L("Cost ($)")).tag(DisplayMetric.cost)
-                    Text(L("Tokens (↑↓)")).tag(DisplayMetric.tokens)
-                    Text(L("Total Tokens")).tag(DisplayMetric.totalTokens)
-                    Text(L("Credits (Codex)")).tag(DisplayMetric.credits)
-                    Text(L("Icon Only")).tag(DisplayMetric.iconOnly)
-                }
-                Picker(L("Period"), selection: Binding(
-                    get: { store.menubarPeriod },
-                    set: { store.setMenubarPeriod($0) }
-                )) {
-                    ForEach(Period.menubarMetricCases) { period in
-                        Text(period.menubarMetricLabel).tag(period)
-                    }
-                }
-                .pickerStyle(.menu)
-                Picker(L("Scope"), selection: Binding(
-                    get: { store.menubarScope },
-                    set: { store.setMenubarScope($0) }
-                )) {
-                    ForEach(MenubarScope.allCases) { scope in
-                        Text(scope.displayLabel).tag(scope)
-                    }
-                }
-                .pickerStyle(.menu)
-                // Optional second menu-bar line. Off by default, so the status
-                // item keeps its existing single-row figure untouched.
-                Toggle(L("Second row"), isOn: Binding(
-                    get: { store.menubarSecondRowEnabled },
-                    set: { store.menubarSecondRowEnabled = $0 }
-                ))
-                if store.menubarSecondRowEnabled {
-                    Picker(L("Second row shows"), selection: Binding(
-                        get: { store.menubarSecondRowMetric },
-                        set: { store.menubarSecondRowMetric = $0 }
-                    )) {
-                        ForEach(MenubarSecondRowMetric.allCases) { metric in
-                            Text(metric.settingsLabel).tag(metric)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    Text(L("Adds a smaller second line under the menubar figure. Quota remaining tracks whichever connected provider is nearest its limit. The line hides itself while the chosen metric has no data."))
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                }
                 Picker(L("Accent"), selection: Binding(
                     get: { store.accentPreset },
                     set: { store.accentPreset = $0 }
@@ -522,7 +430,7 @@ private struct GeneralSettingsTab: View {
                     }
                 }
                 .pickerStyle(.menu)
-                Text(L("How often the menubar figure re-reads your local session data. Auto refreshes every 30 seconds while you're plugged in and backs off on battery; Manual only refreshes when you open the popover or click Refresh Now."))
+                Text(L("How often the app refreshes local provider usage. Auto refreshes every 30 seconds while you're plugged in and backs off on battery."))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -561,102 +469,10 @@ private struct GeneralSettingsTab: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section(L("Alerts")) {
-                // The budget tracks whatever the menubar metric shows: dollars for
-                // the Cost metric, tokens for the Tokens / Total Tokens metrics.
-                // "Custom…" reveals a field for an exact amount.
-                if store.isTokenMetric {
-                    Picker(L("Daily budget"), selection: Binding(
-                        get: { tokenCustom ? -1.0 : store.dailyTokenBudget },
-                        set: { sel in
-                            if sel < 0 {
-                                tokenCustom = true
-                                tokenText = store.dailyTokenBudget > 0 ? trimNumber(store.dailyTokenBudget / 1_000_000) : ""
-                            } else {
-                                tokenCustom = false
-                                store.dailyTokenBudget = sel
-                            }
-                        }
-                    )) {
-                        Text(L("Off")).tag(0.0)
-                        Text("1M").tag(1_000_000.0)
-                        Text("5M").tag(5_000_000.0)
-                        Text("10M").tag(10_000_000.0)
-                        Text("25M").tag(25_000_000.0)
-                        Text("50M").tag(50_000_000.0)
-                        Text("100M").tag(100_000_000.0)
-                        Text(L("Custom…")).tag(-1.0)
-                    }
-                    if tokenCustom {
-                        HStack {
-                            TextField(L("Amount"), text: $tokenText)
-                                .multilineTextAlignment(.trailing)
-                                .onSubmit { applyTokenBudget() }
-                                .onChange(of: tokenText) { _, _ in applyTokenBudget() }
-                            Text(L("M tokens")).foregroundStyle(.secondary)
-                        }
-                    }
-                } else {
-                    Picker(L("Daily budget"), selection: Binding(
-                        get: { costCustom ? -1.0 : store.dailyBudget },
-                        set: { sel in
-                            if sel < 0 {
-                                costCustom = true
-                                costText = store.dailyBudget > 0 ? trimNumber(store.dailyBudget) : ""
-                            } else {
-                                costCustom = false
-                                store.dailyBudget = sel
-                            }
-                        }
-                    )) {
-                        Text(L("Off")).tag(0.0)
-                        Text("$25").tag(25.0)
-                        Text("$50").tag(50.0)
-                        Text("$100").tag(100.0)
-                        Text("$200").tag(200.0)
-                        Text("$500").tag(500.0)
-                        Text(L("Custom…")).tag(-1.0)
-                    }
-                    if costCustom {
-                        HStack {
-                            Text("$").foregroundStyle(.secondary)
-                            TextField(L("Amount"), text: $costText)
-                                .multilineTextAlignment(.trailing)
-                                .onSubmit { applyCostBudget() }
-                                .onChange(of: costText) { _, _ in applyCostBudget() }
-                        }
-                    }
-                }
-                Text(alertHelpText)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
-            .onAppear {
-                costCustom = store.dailyBudget > 0 && !costPresets.contains(store.dailyBudget)
-                if costCustom { costText = trimNumber(store.dailyBudget) }
-                tokenCustom = store.dailyTokenBudget > 0 && !tokenPresets.contains(store.dailyTokenBudget)
-                if tokenCustom { tokenText = trimNumber(store.dailyTokenBudget / 1_000_000) }
-            }
-
             PrivacySettingsSection()
         }
         .formStyle(.grouped)
         .padding()
-    }
-
-    private func applyCurrency(code: String) {
-        let symbol = CurrencyState.symbolForCode(code)
-        Task {
-            let cached = await FXRateCache.shared.cachedRate(for: code)
-            if let cached {
-                store.currency = code
-                CurrencyState.shared.apply(code: code, rate: cached, symbol: symbol)
-            }
-            let fresh = await FXRateCache.shared.rate(for: code)
-            store.currency = code
-            CurrencyState.shared.apply(code: code, rate: fresh ?? cached, symbol: symbol)
-        }
-        CLICurrencyConfig.persist(code: code)
     }
 }
 

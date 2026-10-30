@@ -214,6 +214,8 @@ export type MenubarPayload = {
     cacheWriteTokens: number
     cacheHitPercent: number
     codexCredits: number
+    codexCreditsIncomplete?: boolean
+    codexCreditsEstimated?: boolean
     topActivities: Array<{
       name: string
       cost: number
