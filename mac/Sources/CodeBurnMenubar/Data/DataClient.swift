@@ -163,10 +163,9 @@ struct DataClient {
             spawnFallback: {
                 await spawnLimiter.acquire()
                 defer { Task { await spawnLimiter.release() } }
-                let process = CodeburnCLI.makeBundledProcess(
-                    subcommand: subcommand,
-                    qualityOfService: qualityOfService
-                )
+                let process = bypassResident
+                    ? CodeburnCLI.makeBundledProcess(subcommand: subcommand, qualityOfService: qualityOfService)
+                    : CodeburnCLI.makeProcess(subcommand: subcommand, qualityOfService: qualityOfService)
                 // Heartbeats for the no-output watchdog: a multi-minute parse
                 // writes progress lines to stderr instead of going silent.
                 process.environment = CLIWatchdog.withProgressHeartbeat(process.environment)

@@ -1085,6 +1085,8 @@ final class AppStore {
             includeOptimize: includeOptimize,
             scope: key.scope,
             claudeConfigSourceId: key.claudeConfigSourceId,
+            // The resident may be an older CLI and omit the budget fields.
+            bypassResident: key == spendbarBudgetKey,
             qualityOfService: qualityOfService
         )
         // The all-provider slice is the evidence providerPayloadContradictsAll
