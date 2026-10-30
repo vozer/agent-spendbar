@@ -21,7 +21,7 @@ struct FlameWordmark: View {
     ]
 
     private var wordmark: some View {
-        Text("Agent Spendbar")
+        Text(L("Agent Spendbar"))
             .font(.system(size: 13, weight: .semibold))
             .tracking(-0.15)
     }
@@ -59,6 +59,6 @@ struct FlameWordmark: View {
                 sweeping = visible
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Agent Spendbar")
+            .accessibilityLabel(L("Agent Spendbar"))
     }
 }
