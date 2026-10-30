@@ -393,7 +393,7 @@ private struct BarTooltipCard: View {
                             Text("\(formatTokensCompact(Double(m.totalTokens))) tok")
                                 .font(.codeMono(size: 9.5, weight: .medium))
                                 .foregroundStyle(tertiaryText)
-                            Text("\(m.calls) calls")
+                            Text(L("%@ calls", m.calls.asThousandsSeparated()))
                                 .font(.codeMono(size: 9.5, weight: .medium))
                                 .foregroundStyle(secondaryText)
                         }
@@ -416,7 +416,7 @@ private struct BarTooltipCard: View {
                         Text("\(formatTokensCompact(bar.tokens)) tok")
                             .font(.codeMono(size: 9.5, weight: .medium))
                             .foregroundStyle(tertiaryText)
-                        Text("\(bar.calls) calls")
+                        Text(L("%@ calls", bar.calls.asThousandsSeparated()))
                             .font(.codeMono(size: 9.5, weight: .medium))
                             .foregroundStyle(secondaryText)
                     }
