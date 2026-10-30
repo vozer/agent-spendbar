@@ -163,7 +163,7 @@ struct DataClient {
             spawnFallback: {
                 await spawnLimiter.acquire()
                 defer { Task { await spawnLimiter.release() } }
-                let process = CodeburnCLI.makeProcess(
+                let process = CodeburnCLI.makeBundledProcess(
                     subcommand: subcommand,
                     qualityOfService: qualityOfService
                 )

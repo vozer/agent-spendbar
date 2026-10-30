@@ -74,9 +74,9 @@ enum CodeburnCLI {
     private static let persistedPathFilename = "codeburn-cli-path.v1"
 
     /// Returns the argv that launches the CLI. Dev override via `CODEBURN_BIN` is honoured only
-    /// if every whitespace-delimited token passes `safeArgPattern`. Otherwise falls back to the
-    /// plain `codeburn` name (resolved via PATH).
-    static func baseArgv() -> [String] {
+    /// if every whitespace-delimited token passes `safeArgPattern`. Data fetches can prefer the
+    /// CLI shipped in this app, so its JSON schema matches this Swift client.
+    static func baseArgv(preferBundledCLI: Bool = false) -> [String] {
         if ProcessInfo.processInfo.environment["CODEBURN_ALLOW_DEV_BIN"] == "1",
            let raw = ProcessInfo.processInfo.environment["CODEBURN_BIN"],
            !raw.isEmpty
@@ -87,6 +87,13 @@ enum CodeburnCLI {
                 return installedArgv()
             }
             return parts
+        }
+
+        if preferBundledCLI,
+           let resourceURL = Bundle.main.resourceURL,
+           FileManager.default.isReadableFile(atPath: resourceURL.appendingPathComponent("CodeBurnCLI/dist/cli.js").path)
+        {
+            return ["node", resourceURL.appendingPathComponent("CodeBurnCLI/dist/cli.js").path]
         }
 
         return installedArgv()
@@ -129,11 +136,26 @@ enum CodeburnCLI {
         subcommand: [String],
         qualityOfService: QualityOfService = .userInitiated
     ) -> Process {
+        makeProcess(subcommand: subcommand, qualityOfService: qualityOfService, preferBundledCLI: false)
+    }
+
+    static func makeBundledProcess(
+        subcommand: [String],
+        qualityOfService: QualityOfService = .userInitiated
+    ) -> Process {
+        makeProcess(subcommand: subcommand, qualityOfService: qualityOfService, preferBundledCLI: true)
+    }
+
+    private static func makeProcess(
+        subcommand: [String],
+        qualityOfService: QualityOfService,
+        preferBundledCLI: Bool
+    ) -> Process {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         // Resolved once so the PATH we build and the argv we run can never disagree
         // about which install of the CLI this launch is talking about.
-        let argv = baseArgv()
+        let argv = baseArgv(preferBundledCLI: preferBundledCLI)
         var environment = ProcessInfo.processInfo.environment
         environment["PATH"] = augmentedPath(
             environment["PATH"] ?? "",

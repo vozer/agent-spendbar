@@ -48,8 +48,9 @@ enum MenubarBudgetStatus {
         let cursor = providers.filter { $0.id == "cursor" || $0.id == "cursor-agent" }
         return [
             item("codex", "Codex", used: codex == nil ? nil : current?.codexCredits,
-                 budget: codexBudget, estimated: current?.codexCreditsEstimated == true,
-                 incomplete: unavailable || current?.codexCreditsIncomplete == true),
+                 budget: codexBudget,
+                 estimated: current?.codexCreditsEstimated == true || current?.codexCreditsIncomplete == true,
+                 incomplete: unavailable),
             item("claude", "Claude", used: claude?.cost, budget: 100,
                  estimated: true, incomplete: unavailable),
             item("cursor", "Cursor", used: cursor.isEmpty ? nil : cursor.reduce(0) { $0 + $1.cost }, budget: 100,

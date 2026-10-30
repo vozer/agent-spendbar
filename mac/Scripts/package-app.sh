@@ -30,6 +30,13 @@ MAC_DIR="${ROOT}/mac"
 DIST_DIR="${MAC_DIR}/.build/dist"
 ICON_SOURCE="${ROOT}/assets/menubar-logo.png"
 
+for cli_file in cli.js main.js parse-worker.js; do
+  if [[ ! -f "${ROOT}/dist/${cli_file}" ]]; then
+    echo "Missing dist/${cli_file}; run npm ci && npm run build:cli first." >&2
+    exit 1
+  fi
+done
+
 cd "${MAC_DIR}"
 
 echo "▸ Cleaning previous dist..."
@@ -61,6 +68,13 @@ SPM_RESOURCE_BUNDLE="${BIN_PATH}/${RESOURCE_BUNDLE_NAME}"
 if [[ -d "${SPM_RESOURCE_BUNDLE}" ]]; then
   cp -R "${SPM_RESOURCE_BUNDLE}" "${BUNDLE}/Contents/Resources/"
 fi
+
+# Keep the app's Swift JSON model paired with the CLI version that produces it.
+CLI_BUNDLE="${BUNDLE}/Contents/Resources/CodeBurnCLI"
+mkdir -p "${CLI_BUNDLE}/dist"
+cp "${ROOT}/dist/cli.js" "${ROOT}/dist/main.js" "${ROOT}/dist/parse-worker.js" "${CLI_BUNDLE}/dist/"
+cp "${ROOT}/package.json" "${ROOT}/package-lock.json" "${CLI_BUNDLE}/"
+npm ci --prefix "${CLI_BUNDLE}" --omit=dev --no-audit --no-fund --silent
 
 ICONSET="${DIST_DIR}/AppIcon.iconset"
 rm -rf "${ICONSET}"
