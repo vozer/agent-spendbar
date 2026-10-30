@@ -198,10 +198,6 @@
 "Agent Spendbar · Monthly budget · %@" = "Agent Spendbar · 월간 예산 · %@";
 "About Agent Spendbar" = "Agent Spendbar 정보";
 "Quit Agent Spendbar" = "Agent Spendbar 종료";
-"Today · no usage yet" = "오늘 · 아직 사용량 없음";
-"1 call" = "1회 호출";
-"%lld calls" = "%lld회 호출";
-"Today · %1$@ · %2$@" = "오늘 · %1$@ · %2$@";
 "Agent Spendbar Settings" = "Agent Spendbar 설정";
 "Update Available" = "업데이트 가능";
 "%1$@ is available (you have %2$@)." = "%1$@ 버전이 나왔습니다 (현재 %2$@).";
@@ -476,36 +472,13 @@
 "About" = "정보";
 "Settings" = "설정";
 "Search providers" = "제공업체 검색";
-"Enter an amount above, or the alert stays off." = "위에 금액을 입력하지 않으면 알림이 꺼진 상태로 유지됩니다.";
-"Flame icon turns yellow when today's tokens pass the daily budget." = "오늘 사용한 토큰이 일일 예산을 초과하면 불꽃 아이콘이 노란색으로 바뀝니다.";
-"Flame icon turns yellow when today's cost pass the daily budget." = "오늘 사용한 비용이 일일 예산을 초과하면 불꽃 아이콘이 노란색으로 바뀝니다.";
 "Display" = "표시";
-"Currency" = "통화";
-"Metric" = "지표";
-"Cost ($)" = "비용 ($)";
-"Tokens (↑↓)" = "토큰 (↑↓)";
-"Total Tokens" = "총 토큰";
-"Credits (Codex)" = "크레딧 (Codex)";
-"Icon Only" = "아이콘만";
-"Period" = "기간";
-"Scope" = "범위";
 "Accent" = "강조 색상";
 "Usage Refresh" = "사용량 새로고침";
 "Update every" = "업데이트 주기";
-"How often the menubar figure re-reads your local session data. Auto refreshes every 30 seconds while you're plugged in and backs off on battery; Manual only refreshes when you open the popover or click Refresh Now." = "메뉴바 숫자가 로컬 세션 데이터를 다시 읽는 주기입니다. “자동”은 전원에 연결된 동안 30초마다 새로고침하며 배터리 사용 시 느려지고, “수동”은 팝오버를 열거나 “지금 새로고침”을 클릭할 때만 새로고침합니다.";
 "Updates" = "업데이트";
 "Notify me about updates" = "업데이트 알림 받기";
 "Posts a notification when a new CodeBurn release is available. Click it to install." = "새 CodeBurn 버전이 나오면 알림을 보냅니다. 알림을 클릭하면 설치됩니다.";
-"Terminal" = "터미널";
-"Open commands in" = "명령어를 여는 방법";
-"%@ (not installed)" = "%@ (설치되지 않음)";
-"Where Full Report and Optimize open. If the chosen app isn't installed CodeBurn falls back to Terminal; if that's missing too the command runs in the background. Only terminals that can script a command into a live window are listed." = "“전체 리포트”와 “최적화”가 열리는 위치입니다. 선택한 앱이 설치되어 있지 않으면 CodeBurn은 터미널로 대체하며, 터미널마저 없으면 명령어가 백그라운드에서 실행됩니다. 실행 중인 창에 명령어를 전달할 수 있는 터미널만 목록에 표시됩니다.";
-"Alerts" = "알림";
-"Daily budget" = "일일 예산";
-"Off" = "끄기";
-"Custom…" = "사용자 지정…";
-"Amount" = "금액";
-"M tokens" = "백만 토큰";
 "Show Capacity Dock" = "캐퍼시티 독 표시";
 "Resting provider" = "기본 제공업체";
 "Size" = "크기";
@@ -630,9 +603,6 @@
 "Links" = "링크";
 
 /* MARK: Menubar second row (#1252) */
-"Second row" = "두 번째 줄";
-"Second row shows" = "두 번째 줄에 표시";
-"Adds a smaller second line under the menubar figure. Quota remaining tracks whichever connected provider is nearest its limit. The line hides itself while the chosen metric has no data." = "메뉴바 숫자 아래에 작은 두 번째 줄을 추가합니다. “남은 할당량”은 연결된 제공업체 중 한도에 가장 가까운 항목을 추적합니다. 선택한 지표에 데이터가 없으면 이 줄은 자동으로 숨겨집니다.";
 "Quota remaining" = "남은 할당량";
 "Today's cost" = "오늘 비용";
 "Today's tokens" = "오늘 토큰";
@@ -739,3 +709,4 @@
 "Couldn't save the setting: config.json is invalid or locked" = "설정을 저장할 수 없습니다. config.json이 잘못되었거나 잠겨 있습니다";
 "Monthly usage" = "월간 사용량";
 "Percent of monthly budget used. A tilde marks estimated or partial data." = "월간 예산 사용률입니다. 물결표는 추정값 또는 일부 데이터임을 나타냅니다.";
+"How often the app refreshes local provider usage. Auto refreshes every 30 seconds while you're plugged in and backs off on battery." = "로컬 제공자 사용량을 새로 고치는 빈도입니다. 자동 모드는 전원에 연결되어 있을 때 30초마다 새로 고치고, 배터리 사용 중에는 간격을 늘립니다.";

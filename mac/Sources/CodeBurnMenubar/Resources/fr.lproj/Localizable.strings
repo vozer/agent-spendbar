@@ -198,10 +198,6 @@
 "Agent Spendbar · Monthly budget · %@" = "Agent Spendbar · Budget mensuel · %@";
 "About Agent Spendbar" = "À propos d’Agent Spendbar";
 "Quit Agent Spendbar" = "Quitter Agent Spendbar";
-"Today · no usage yet" = "Aujourd'hui · aucun usage";
-"1 call" = "1 appel";
-"%lld calls" = "%lld appels";
-"Today · %1$@ · %2$@" = "Aujourd'hui · %1$@ · %2$@";
 "Agent Spendbar Settings" = "Réglages Agent Spendbar";
 "Update Available" = "Mise à jour disponible";
 "%1$@ is available (you have %2$@)." = "%1$@ est disponible (vous avez %2$@).";
@@ -476,36 +472,13 @@
 "About" = "À propos";
 "Settings" = "Réglages";
 "Search providers" = "Rechercher un fournisseur";
-"Enter an amount above, or the alert stays off." = "Saisissez un montant ci-dessus, sinon l'alerte reste désactivée.";
-"Flame icon turns yellow when today's tokens pass the daily budget." = "L'icône flamme devient jaune quand les tokens du jour dépassent le budget quotidien.";
-"Flame icon turns yellow when today's cost pass the daily budget." = "L'icône flamme devient jaune quand le coût du jour dépasse le budget quotidien.";
 "Display" = "Affichage";
-"Currency" = "Devise";
-"Metric" = "Métrique";
-"Cost ($)" = "Coût ($)";
-"Tokens (↑↓)" = "Tokens (↑↓)";
-"Total Tokens" = "Tokens totaux";
-"Credits (Codex)" = "Crédits (Codex)";
-"Icon Only" = "Icône seule";
-"Period" = "Période";
-"Scope" = "Portée";
 "Accent" = "Accent";
 "Usage Refresh" = "Actualisation de l'usage";
 "Update every" = "Actualiser toutes les";
-"How often the menubar figure re-reads your local session data. Auto refreshes every 30 seconds while you're plugged in and backs off on battery; Manual only refreshes when you open the popover or click Refresh Now." = "Fréquence de relecture des données de session locales par le chiffre du menu bar. Auto actualise toutes les 30 s sur secteur et ralentit sur batterie ; Manuel n'actualise qu'à l'ouverture du popover ou via Actualiser maintenant.";
 "Updates" = "Mises à jour";
 "Notify me about updates" = "Me notifier des mises à jour";
 "Posts a notification when a new CodeBurn release is available. Click it to install." = "Envoie une notification lorsqu'une nouvelle version de CodeBurn est disponible. Cliquez dessus pour l'installer.";
-"Terminal" = "Terminal";
-"Open commands in" = "Ouvrir les commandes dans";
-"%@ (not installed)" = "%@ (non installé)";
-"Where Full Report and Optimize open. If the chosen app isn't installed CodeBurn falls back to Terminal; if that's missing too the command runs in the background. Only terminals that can script a command into a live window are listed." = "Là où s'ouvrent Rapport complet et Optimiser. Si l'app choisie n'est pas installée, CodeBurn utilise Terminal ; si celui-ci manque aussi, la commande s'exécute en arrière-plan. Seuls les terminaux capables d'exécuter une commande dans une fenêtre active sont listés.";
-"Alerts" = "Alertes";
-"Daily budget" = "Budget quotidien";
-"Off" = "Désactivé";
-"Custom…" = "Personnalisé…";
-"Amount" = "Montant";
-"M tokens" = "M tokens";
 "Show Capacity Dock" = "Afficher le Capacity Dock";
 "Resting provider" = "Fournisseur au repos";
 "Size" = "Taille";
@@ -630,9 +603,6 @@
 "Links" = "Liens";
 
 /* MARK: Menubar second row (#1252) */
-"Second row" = "Seconde ligne";
-"Second row shows" = "La seconde ligne affiche";
-"Adds a smaller second line under the menubar figure. Quota remaining tracks whichever connected provider is nearest its limit. The line hides itself while the chosen metric has no data." = "Ajoute une seconde ligne plus petite sous le chiffre du menu bar. Quota restant suit le fournisseur connecté le plus proche de sa limite. La ligne se masque quand la métrique choisie n'a pas de données.";
 "Quota remaining" = "Quota restant";
 "Today's cost" = "Coût du jour";
 "Today's tokens" = "Tokens du jour";
@@ -739,3 +709,4 @@
 "Couldn't save the setting: config.json is invalid or locked" = "Impossible d'enregistrer le réglage : config.json est invalide ou verrouillé";
 "Monthly usage" = "Utilisation mensuelle";
 "Percent of monthly budget used. A tilde marks estimated or partial data." = "Pourcentage du budget mensuel utilisé. Le tilde indique une estimation ou des données partielles.";
+"How often the app refreshes local provider usage. Auto refreshes every 30 seconds while you're plugged in and backs off on battery." = "Fréquence d’actualisation de l’utilisation locale des fournisseurs. Le mode automatique actualise toutes les 30 secondes lorsque l’appareil est branché et ralentit sur batterie.";

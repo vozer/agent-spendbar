@@ -198,10 +198,6 @@
 "Agent Spendbar · Monthly budget · %@" = "Agent Spendbar · 每月預算 · %@";
 "About Agent Spendbar" = "關於 Agent Spendbar";
 "Quit Agent Spendbar" = "結束 Agent Spendbar";
-"Today · no usage yet" = "今天 · 暫無用量";
-"1 call" = "1 次呼叫";
-"%lld calls" = "%lld 次呼叫";
-"Today · %1$@ · %2$@" = "今天 · %1$@ · %2$@";
 "Agent Spendbar Settings" = "Agent Spendbar 設定";
 "Update Available" = "有可用更新";
 "%1$@ is available (you have %2$@)." = "%1$@ 已釋出（你當前為 %2$@）。";
@@ -473,36 +469,13 @@
 "About" = "關於";
 "Settings" = "設定";
 "Search providers" = "搜尋服務商";
-"Enter an amount above, or the alert stays off." = "請在上方輸入金額，否則提醒不會生效。";
-"Flame icon turns yellow when today's tokens pass the daily budget." = "當今天的 Token 超過每日預算時，火焰圖示會變為黃色。";
-"Flame icon turns yellow when today's cost pass the daily budget." = "當今天的花費超過每日預算時，火焰圖示會變為黃色。";
 "Display" = "顯示";
-"Currency" = "貨幣";
-"Metric" = "指標";
-"Cost ($)" = "花費（$）";
-"Tokens (↑↓)" = "Token（↑↓）";
-"Total Tokens" = "Token 總計";
-"Credits (Codex)" = "點數（Codex）";
-"Icon Only" = "僅圖示";
-"Period" = "時間範圍";
-"Scope" = "範圍";
 "Accent" = "主題色";
 "Usage Refresh" = "用量重新整理";
 "Update every" = "更新間隔";
-"How often the menubar figure re-reads your local session data. Auto refreshes every 30 seconds while you're plugged in and backs off on battery; Manual only refreshes when you open the popover or click Refresh Now." = "選單欄數字重新讀取本機會話資料的頻率。“自動”在接通電源時每 30 秒重新整理一次，使用電池時會放慢；“手動”僅在你開啟彈窗或點按“立即重新整理”時重新整理。";
 "Updates" = "更新";
 "Notify me about updates" = "有更新時通知我";
 "Posts a notification when a new CodeBurn release is available. Click it to install." = "當有新的 CodeBurn 版本釋出時傳送通知。點按通知即可安裝。";
-"Terminal" = "終端";
-"Open commands in" = "命令開啟方式";
-"%@ (not installed)" = "%@（未安裝）";
-"Where Full Report and Optimize open. If the chosen app isn't installed CodeBurn falls back to Terminal; if that's missing too the command runs in the background. Only terminals that can script a command into a live window are listed." = "“完整報告”和“優化”的開啟位置。如果所選應用未安裝，CodeBurn 會回退到“終端”；若“終端”也不存在，命令將在背景執行。此處僅列出能夠將命令寫入活動視窗的終端。";
-"Alerts" = "提醒";
-"Daily budget" = "每日預算";
-"Off" = "關閉";
-"Custom…" = "自定義…";
-"Amount" = "金額";
-"M tokens" = "百萬 Token";
 "Show Capacity Dock" = "顯示容量 Dock";
 "Resting provider" = "預設服務商";
 "Size" = "大小";
@@ -627,9 +600,6 @@
 "Links" = "連結";
 
 /* MARK: Menubar second row (#1252) */
-"Second row" = "第二行";
-"Second row shows" = "第二行顯示";
-"Adds a smaller second line under the menubar figure. Quota remaining tracks whichever connected provider is nearest its limit. The line hides itself while the chosen metric has no data." = "在選單欄數字下方新增一行較小的文字。“剩餘配額”會追蹤最接近限額的已連線服務商。當所選指標暫無資料時，該行會自動隱藏。";
 "Quota remaining" = "剩餘配額";
 "Today's cost" = "今日花費";
 "Today's tokens" = "今日 Token";
@@ -735,3 +705,4 @@
 "Couldn't save the setting: config.json is invalid or locked" = "無法儲存設定：config.json 無效或已被鎖定";
 "Monthly usage" = "每月用量";
 "Percent of monthly budget used. A tilde marks estimated or partial data." = "已用每月預算的百分比。波浪號表示資料為估算或部分資料。";
+"How often the app refreshes local provider usage. Auto refreshes every 30 seconds while you're plugged in and backs off on battery." = "本機供應商用量的重新整理頻率。自動模式會在接上電源時每 30 秒重新整理一次，並在使用電池時降低頻率。";

@@ -198,10 +198,6 @@
 "Agent Spendbar · Monthly budget · %@" = "Agent Spendbar · 月間予算 · %@";
 "About Agent Spendbar" = "Agent Spendbarについて";
 "Quit Agent Spendbar" = "Agent Spendbarを終了";
-"Today · no usage yet" = "今日 · 使用量なし";
-"1 call" = "1回の呼び出し";
-"%lld calls" = "%lld回の呼び出し";
-"Today · %1$@ · %2$@" = "今日 · %1$@ · %2$@";
 "Agent Spendbar Settings" = "Agent Spendbar 設定";
 "Update Available" = "更新があります";
 "%1$@ is available (you have %2$@)." = "%1$@ が利用可能です（現在は%2$@）。";
@@ -476,36 +472,13 @@
 "About" = "情報";
 "Settings" = "設定";
 "Search providers" = "プロバイダーを検索";
-"Enter an amount above, or the alert stays off." = "上に金額を入力してください。入力しない場合、アラートはオフのままです。";
-"Flame icon turns yellow when today's tokens pass the daily budget." = "今日のトークン数が1日の予算を超えると、炎のアイコンが黄色になります。";
-"Flame icon turns yellow when today's cost pass the daily budget." = "今日のコストが1日の予算を超えると、炎のアイコンが黄色になります。";
 "Display" = "表示";
-"Currency" = "通貨";
-"Metric" = "指標";
-"Cost ($)" = "コスト（$）";
-"Tokens (↑↓)" = "トークン（↑↓）";
-"Total Tokens" = "トークン合計";
-"Credits (Codex)" = "クレジット（Codex）";
-"Icon Only" = "アイコンのみ";
-"Period" = "期間";
-"Scope" = "範囲";
 "Accent" = "アクセントカラー";
 "Usage Refresh" = "使用量の更新";
 "Update every" = "更新間隔";
-"How often the menubar figure re-reads your local session data. Auto refreshes every 30 seconds while you're plugged in and backs off on battery; Manual only refreshes when you open the popover or click Refresh Now." = "メニューバーの数値がローカルのセッションデータを再読み込みする頻度です。「自動」は電源接続時に30秒ごとに更新し、バッテリー使用時は間隔を延ばします。「手動」はポップオーバーを開くか「今すぐ更新」をクリックしたときのみ更新します。";
 "Updates" = "更新";
 "Notify me about updates" = "更新があれば通知する";
 "Posts a notification when a new CodeBurn release is available. Click it to install." = "新しいCodeBurnのリリースが利用可能になると通知します。通知をクリックするとインストールできます。";
-"Terminal" = "ターミナル";
-"Open commands in" = "コマンドを開くアプリ";
-"%@ (not installed)" = "%@（未インストール）";
-"Where Full Report and Optimize open. If the chosen app isn't installed CodeBurn falls back to Terminal; if that's missing too the command runs in the background. Only terminals that can script a command into a live window are listed." = "「完全なレポート」と「最適化」が開くアプリです。選択したアプリがインストールされていない場合、CodeBurnはターミナルにフォールバックします。ターミナルもない場合はコマンドがバックグラウンドで実行されます。アクティブなウィンドウにコマンドをスクリプトで送れるターミナルのみが表示されます。";
-"Alerts" = "アラート";
-"Daily budget" = "1日の予算";
-"Off" = "オフ";
-"Custom…" = "カスタム…";
-"Amount" = "金額";
-"M tokens" = "百万トークン";
 "Show Capacity Dock" = "容量ドックを表示";
 "Resting provider" = "デフォルトのプロバイダー";
 "Size" = "サイズ";
@@ -630,9 +603,6 @@
 "Links" = "リンク";
 
 /* MARK: Menubar second row (#1252) */
-"Second row" = "2行目";
-"Second row shows" = "2行目に表示";
-"Adds a smaller second line under the menubar figure. Quota remaining tracks whichever connected provider is nearest its limit. The line hides itself while the chosen metric has no data." = "メニューバーの数値の下に小さな2行目を追加します。「残りクォータ」は上限に最も近い接続済みプロバイダーを追跡します。選択した指標にデータがない場合、この行は自動的に非表示になります。";
 "Quota remaining" = "残りクォータ";
 "Today's cost" = "今日のコスト";
 "Today's tokens" = "今日のトークン";
@@ -739,3 +709,4 @@
 "Couldn't save the setting: config.json is invalid or locked" = "設定を保存できませんでした。config.jsonが無効か、ロックされています";
 "Monthly usage" = "月間の使用量";
 "Percent of monthly budget used. A tilde marks estimated or partial data." = "月間予算の使用率です。チルダは推定値または一部のデータを示します。";
+"How often the app refreshes local provider usage. Auto refreshes every 30 seconds while you're plugged in and backs off on battery." = "ローカルのプロバイダー使用量を更新する頻度です。自動では電源接続時に30秒ごとに更新し、バッテリー駆動時は間隔を空けます。";
