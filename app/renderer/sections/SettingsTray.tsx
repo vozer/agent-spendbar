@@ -1,9 +1,8 @@
 // The tray app's own settings, inside the desktop app's Settings.
 //
 // The tray app (windows/) has a settings window of its own, and everything here writes the
-// same two files it reads: `windows-settings.json` and `windows-dock.json`. Only the settings
-// the desktop app does not already have appear; currency, period, scope and the daily budget
-// are shared through the CLI config and live in General.
+// same two files it reads: `windows-settings.json` and `windows-dock.json`. Only tray-specific
+// preferences appear here; project scope remains a shared setting in General.
 //
 // Both panes are Windows only, and each is shown only while its switch in the sidebar corner
 // is on: there is nothing to configure about a tray app that is not running, and the rail is
@@ -38,7 +37,6 @@ const ACCENTS: Array<{ id: string; labelKey: string; base: string }> = [
 ]
 
 const METRICS = [
-  { value: 'cost', labelKey: 'settings.tray.metric.cost' },
   { value: 'tokens', labelKey: 'settings.tray.metric.tokens' },
   { value: 'totalTokens', labelKey: 'settings.tray.metric.totalTokens' },
   { value: 'iconOnly', labelKey: 'settings.tray.metric.iconOnly' },
@@ -159,7 +157,7 @@ export function MenuBarPane() {
         <div className="about-sec">
           <div className="about-sec-h">{t('settings.tray.figureHeading')}</div>
           <div className="about-row"><label className="tx" htmlFor="tray-metric">{t('settings.tray.metricLabel')}<small>{t('settings.tray.metricHint')}</small></label><span className="r">
-            <Dropdown id="tray-metric" ariaLabel={t('settings.tray.metricAriaLabel')} value={app.metric} options={METRICS.map(m => ({ value: m.value, label: t(m.labelKey) }))} onChange={value => setApp({ metric: value })} width={168} />
+            <Dropdown id="tray-metric" ariaLabel={t('settings.tray.metricAriaLabel')} value={app.metric === 'cost' ? 'tokens' : app.metric} options={METRICS.map(m => ({ value: m.value, label: t(m.labelKey) }))} onChange={value => setApp({ metric: value })} width={168} />
           </span></div>
           <div className="about-row"><label className="tx" htmlFor="tray-period">{t('settings.tray.periodLabel')}<small>{t('settings.tray.periodHint')}</small></label><span className="r">
             <Dropdown id="tray-period" ariaLabel={t('settings.tray.periodAriaLabel')} value={app.menubarPeriod} options={MENUBAR_PERIODS.map(p => ({ value: p.value, label: t(p.labelKey) }))} onChange={value => setApp({ menubarPeriod: value })} width={120} />

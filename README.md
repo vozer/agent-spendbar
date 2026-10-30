@@ -1,6 +1,8 @@
 # Agent Spendbar
 
-Agent Spendbar is a public fork of [CodeBurn](https://github.com/getagentseal/codeburn). Its menu bar and dashboards show monthly usage percentages for Codex, Claude Code, and Cursor.
+Agent Spendbar is a public fork of [CodeBurn](https://github.com/getagentseal/codeburn). Its menu bar shows monthly usage percentages for Codex, Claude Code, and Cursor.
+
+The dashboards keep CodeBurn's usage analytics for sessions, models, plans, projects, devices, tokens, calls, and tools. The frontends show no currency amounts. They use local cost data only to calculate budget percentages.
 
 ## What the menu bar shows
 

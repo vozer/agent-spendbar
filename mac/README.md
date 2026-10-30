@@ -1,6 +1,6 @@
 # Agent Spendbar for macOS
 
-Agent Spendbar is the menu bar app in this CodeBurn fork. It shows monthly budget use for Codex, Claude Code, and Cursor.
+Agent Spendbar is the menu bar app in this CodeBurn fork. It shows monthly percentages for Codex, Claude Code, and Cursor, with CodeBurn usage details in its popover.
 
 ## Requirements
 
@@ -22,6 +22,6 @@ CODEBURN_ALLOW_DEV_BIN=1 CODEBURN_BIN="node $(pwd)/../dist/cli.js" swift run Age
 
 `--keep-both` keeps the original CodeBurn app open. The fork uses its own app bundle ID, status-item placement, and preferences.
 
-The app reads Codex Spend's saved monthly credit budget. Claude's local session costs are estimates. Cursor uses its usage export for metered amounts and marks estimated amounts with `~`.
+The app keeps token, call, session, model, pull request, and tool details. It shows no currency amounts. Local cost data stays available to calculate budget percentages.
 
 See the [repository README](../README.md) for budget details and [CodeBurn's documentation](https://github.com/getagentseal/codeburn/blob/main/README.md) for provider data sources.

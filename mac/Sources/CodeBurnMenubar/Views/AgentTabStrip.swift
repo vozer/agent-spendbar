@@ -41,8 +41,7 @@ struct AgentTabStrip: View {
                             ForEach(visibleFilters) { filter in
                                 AgentTab(
                                     filter: filter,
-                                    cost: cost(for: filter),
-                                    isEstimated: isEstimated(filter),
+                                    calls: calls(for: filter),
                                     isActive: store.selectedProvider == filter,
                                     quota: store.quotaSummary(for: filter)
                                 ) {
@@ -130,7 +129,7 @@ struct AgentTabStrip: View {
             providerDetails: periodAll.current.providerDetails,
             legacyProviders: periodAll.current.providers
         )
-        let costs = Dictionary(uniqueKeysWithValues: ProviderFilter.allCases.map { ($0, cost(for: $0) ?? 0) })
+        let usageCounts = Dictionary(uniqueKeysWithValues: ProviderFilter.allCases.map { ($0, calls(for: $0) ?? 0) })
         let detected = ProviderFilter.allCases.filter { filter in
             filter == .all
                 || activeKeys.contains(filter.cliArg)
@@ -139,31 +138,20 @@ struct AgentTabStrip: View {
         return detected.sorted { a, b in
             if a == .all { return true }
             if b == .all { return false }
-            let ca = costs[a, default: 0]
-            let cb = costs[b, default: 0]
+            let ca = usageCounts[a, default: 0]
+            let cb = usageCounts[b, default: 0]
             if ca != cb { return ca > cb }
             return a.rawValue < b.rawValue
         }
     }
 
-    private func isEstimated(_ filter: ProviderFilter) -> Bool {
-        guard filter != .all, let cost = cost(for: filter) else { return false }
-        let estimated = periodAll.current.providerDetails
-            .filter { filter.providerKeys.contains($0.id.lowercased()) || filter.providerKeys.contains($0.label.lowercased()) }
-            .reduce(0.0) { $0 + ($1.estimatedCostUSD ?? 0) }
-        return isEstimatedCost(cost, estimated, shown: cost.asCompactCurrency())
-    }
-
-    private func cost(for filter: ProviderFilter) -> Double? {
-        let data = periodAll
-        if filter == .all { return data.current.cost }
-        let providers = Dictionary(
-            data.current.providers.map { ($0.key.lowercased(), $0.value) },
-            uniquingKeysWith: +
-        )
-        return filter.providerKeys.reduce(0.0) { sum, key in
-            sum + (providers[key] ?? 0)
+    private func calls(for filter: ProviderFilter) -> Int? {
+        if filter == .all { return periodAll.current.calls }
+        let details = periodAll.current.providerDetails.filter {
+            filter.providerKeys.contains($0.id.lowercased()) || filter.providerKeys.contains($0.label.lowercased())
         }
+        guard !details.isEmpty else { return nil }
+        return details.reduce(0) { $0 + $1.calls }
     }
 
     private var pagingState: ProviderStripPagingState {
@@ -231,8 +219,7 @@ struct AgentTabStrip: View {
 
 private struct AgentTab: View {
     let filter: ProviderFilter
-    let cost: Double?
-    var isEstimated = false
+    let calls: Int?
     let isActive: Bool
     let quota: QuotaSummary?
     let onTap: () -> Void
@@ -264,8 +251,8 @@ private struct AgentTab: View {
                     Text(filter.rawValue)
                         .font(.system(size: 11.5, weight: .medium))
                         .tracking(-0.05)
-                    if let cost, cost > 0 {
-                        Text((isEstimated ? "~" : "") + cost.asCompactCurrency())
+                    if let calls, calls > 0 {
+                        Text(calls == 1 ? L("%@ call", calls.asThousandsSeparated()) : L("%@ calls", calls.asThousandsSeparated()))
                             .font(.codeMono(size: 10.5, weight: .medium))
                             .foregroundStyle(isActive ? AnyShapeStyle(.white.opacity(0.8)) : AnyShapeStyle(.secondary))
                             .tracking(-0.2)

@@ -4,11 +4,12 @@ struct ModelsSection: View {
     @Environment(AppStore.self) private var store
     @State private var isExpanded: Bool = true
 
-    // Only surface the Saved column when something was actually saved by a
-    // local-model mapping. With no mapping it would be an unlabeled column of
-    // dashes, so we drop it entirely and keep the plain Cost / Calls layout.
-    private var showSavings: Bool {
-        store.payload.current.topModels.contains { $0.savingsUSD > 0 }
+    private var modelsByUsage: [ModelEntry] {
+        store.payload.current.topModels.sorted { modelUsage($0) > modelUsage($1) }
+    }
+
+    private var maxUsage: Int {
+        max(modelsByUsage.map(modelUsage).max() ?? 1, 1)
     }
 
     var body: some View {
@@ -17,10 +18,6 @@ struct ModelsSection: View {
             isExpanded: $isExpanded,
             trailing: {
                 HStack(spacing: 8) {
-                    Text(L("Cost")).frame(minWidth: 54, alignment: .trailing)
-                    if showSavings {
-                        Text(L("Saved")).frame(minWidth: 54, alignment: .trailing)
-                    }
                     Text(L("Calls")).frame(minWidth: 52, alignment: .trailing)
                 }
                 .font(.system(size: 10, weight: .medium))
@@ -29,29 +26,53 @@ struct ModelsSection: View {
             }
         ) {
             VStack(alignment: .leading, spacing: 7) {
-                let maxCost = max(store.payload.current.topModels.map(\.cost).max() ?? 1, 0.01)
-                ForEach(store.payload.current.topModels, id: \.name) { model in
-                    ModelRow(model: model, maxCost: maxCost, showSavings: showSavings)
+                ForEach(modelsByUsage, id: \.name) { model in
+                    ModelRow(model: model, maxUsage: maxUsage)
                 }
 
                 TokensLine()
                     .padding(.top, 5)
 
-                if store.payload.current.topModels.contains(where: \.isEstimated) {
-                    EstimatedLine()
-                        .padding(.top, 3)
-                }
-
-                // The $0-cost rows below the table's floor never render as
-                // rows; without this line "cheap" and "uncounted" read the
-                // same. Hidden entirely when the payload predates the block.
                 if !store.payload.current.unpricedModels.isEmpty {
-                    UnpricedLine()
+                    AdditionalModelsLine(models: store.payload.current.unpricedModels)
                         .padding(.top, 3)
                 }
             }
         }
     }
+}
+
+private struct AdditionalModelsLine: View {
+    let models: [UnpricedModelEntry]
+
+    var body: some View {
+        let calls = models.reduce(0) { $0 + $1.calls }
+        let tokens = models.reduce(0) { $0 + $1.tokens }
+        HStack(spacing: 4) {
+            Text(L(
+                "Other models · %1$@ calls · %2$@ tokens",
+                compactTokenCount(calls),
+                compactTokenCount(tokens)
+            ))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            Spacer()
+        }
+        .font(.system(size: 10.5))
+        .monospacedDigit()
+        .accessibilityLabel(models.map { "\($0.model): \($0.calls) calls, \($0.tokens) tokens" }.joined(separator: ", "))
+    }
+}
+
+private func modelUsage(_ model: ModelEntry) -> Int {
+    if model.hasTokenCounts || model.cacheWriteTokens != nil {
+        return (model.inputTokens ?? 0)
+            + (model.outputTokens ?? 0)
+            + (model.cacheReadTokens ?? 0)
+            + (model.cacheWriteTokens ?? 0)
+    }
+    return model.calls
 }
 
 /// Compact token count for the narrow popover: `1.2K` / `3.4M` / `5.6B`,
@@ -72,35 +93,18 @@ func compactTokenCount(_ n: Int) -> String {
 
 private struct ModelRow: View {
     let model: ModelEntry
-    let maxCost: Double
-    let showSavings: Bool
+    let maxUsage: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 8) {
-                // Bar tracks actual cost; for local models the cost is $0 and the
-                // bar will be empty. Saved counterfactual (if any) renders as
-                // green text in the saved column, never summed into the bar.
-                FixedBar(fraction: model.cost / maxCost)
+                FixedBar(fraction: Double(modelUsage(model)) / Double(max(maxUsage, 1)))
                     .frame(width: 56, height: 6)
 
                 Text(model.name)
                     .font(.system(size: 12.5, weight: .medium))
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
-
-                Text((model.isEstimated ? "~" : "") + model.cost.asCompactCurrency())
-                    .font(.codeMono(size: 12, weight: .medium))
-                    .tracking(-0.2)
-                    .frame(minWidth: 54, alignment: .trailing)
-
-                if showSavings {
-                    Text(model.savingsUSD > 0 ? model.savingsUSD.asCompactCurrency() : "—")
-                        .font(.codeMono(size: 12))
-                        .tracking(-0.2)
-                        .foregroundStyle(model.savingsUSD > 0 ? Color.green : Color.secondary)
-                        .frame(minWidth: 54, alignment: .trailing)
-                }
 
                 Text("\(model.calls)")
                     .font(.system(size: 11))
@@ -109,12 +113,7 @@ private struct ModelRow: View {
                     .frame(minWidth: 52, alignment: .trailing)
             }
 
-            // Token counts sit on their own secondary line under the model name:
-            // seven squashed columns cannot stay legible in the narrow popover,
-            // and the cost stays visually attached to its model either way. The
-            // line appears only when the payload carries counts for the row — an
-            // older CLI renders exactly as before.
-            if model.hasTokenCounts {
+            if model.hasTokenCounts || model.cacheWriteTokens != nil {
                 Text(L("%1$@ in · %2$@ out · %3$@ cache read", count(model.inputTokens), count(model.outputTokens), count(model.cacheReadTokens)))
                     .font(.system(size: 10.5))
                     .monospacedDigit()
@@ -193,57 +192,5 @@ private struct TokensLine: View {
 
     private func formatTokens(_ n: Int) -> String {
         compactTokenCount(n)
-    }
-}
-
-/// Legend for the `~` marker, worded like the CLI's legend line.
-struct EstimatedLine: View {
-    var body: some View {
-        HStack(spacing: 4) {
-            Text(L("~ estimated cost (priced from estimated tokens)"))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-            Spacer()
-        }
-        .font(.system(size: 10.5))
-    }
-}
-
-/// One secondary line under the models table naming the usage the cost floor
-/// hid (#1420): models whose recorded usage prices at $0 for lack of pricing
-/// data. Compact rounding visible, exact counts in the accessibility label —
-/// the same contract as the token line. "Counted at $0" is the phrase every
-/// other consumer of the block uses (`codeburn mcp`, the desktop compare
-/// view), so the popover names the same condition the same way.
-private struct UnpricedLine: View {
-    @Environment(AppStore.self) private var store
-
-    var body: some View {
-        let unpriced = store.payload.current.unpricedModels
-        let tokens = unpriced.reduce(0) { $0 + $1.tokens }
-        let tok = compactTokenCount(tokens)
-
-        HStack(spacing: 4) {
-            Text(unpriced.count == 1
-                ? L("1 model unpriced, counted at $0 · %@ tokens", tok)
-                : L("%1$lld models unpriced, counted at $0 · %2$@ tokens", unpriced.count, tok))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-            Spacer()
-        }
-        .font(.system(size: 10.5))
-        .monospacedDigit()
-        .accessibilityLabel(unpricedAccessibilityText(unpriced))
-    }
-
-    /// Exact ids and counts for assistive tech; computed, not a literal, the
-    /// same opt-out the per-row token label uses.
-    private func unpricedAccessibilityText(_ unpriced: [UnpricedModelEntry]) -> String {
-        let rows = unpriced.map { entry in
-            "\(entry.model): \(entry.calls) calls, \(entry.tokens) tokens"
-        }
-        return "Unpriced, counted at $0 — " + rows.joined(separator: ", ")
     }
 }

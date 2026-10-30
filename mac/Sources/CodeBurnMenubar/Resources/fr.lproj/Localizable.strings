@@ -710,3 +710,5 @@
 "Monthly usage" = "Utilisation mensuelle";
 "Percent of monthly budget used. A tilde marks estimated or partial data." = "Pourcentage du budget mensuel utilisé. Le tilde indique une estimation ou des données partielles.";
 "How often the app refreshes local provider usage. Auto refreshes every 30 seconds while you're plugged in and backs off on battery." = "Fréquence d’actualisation de l’utilisation locale des fournisseurs. Le mode automatique actualise toutes les 30 secondes lorsque l’appareil est branché et ralentit sur batterie.";
+"Avg/session" = "Moy./session";
+"Other models · %1$@ calls · %2$@ tokens" = "Autres modèles · %1$@ appels · %2$@ jetons";

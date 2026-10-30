@@ -4,6 +4,13 @@ import SwiftUI
 /// Popover root. Assembles all sections matching the HTML design spec.
 struct MenuBarContent: View {
     @Environment(AppStore.self) private var store
+    let monthlyUsageItems: [MenubarBudgetItem]
+    let monthLabel: String
+
+    init(monthlyUsageItems: [MenubarBudgetItem] = [], monthLabel: String = "") {
+        self.monthlyUsageItems = monthlyUsageItems
+        self.monthLabel = monthLabel
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -19,6 +26,9 @@ struct MenuBarContent: View {
             ZStack {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 0) {
+                        MonthlyUsagePopover(items: monthlyUsageItems, monthLabel: monthLabel)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Divider().opacity(0.5)
                         HeroSection()
                         if store.selectedPayloadMayBeIncomplete {
                             Text(L("This total may be incomplete."))
@@ -51,8 +61,6 @@ struct MenuBarContent: View {
                             PullRequestsSection()
                             Divider().opacity(0.5)
                             ToolingSection()
-                            Divider().opacity(0.5)
-                            FindingsSection()
                         }
                     }
                 }
@@ -107,8 +115,8 @@ struct MenuBarContent: View {
         // Plan-capable providers keep their sections visible so the Plan tab
         // (live subscription quota) stays reachable even on days with no
         // local usage — the quota endpoint doesn't depend on local sessions.
-        if store.selectedProvider == .claude || store.selectedProvider == .codex || store.selectedProvider == .kimiCode || store.selectedProvider == .gemini { return false }
-        if store.payload.current.cost > 0 || store.payload.current.calls > 0 { return false }
+        if store.selectedProvider == .claude || store.selectedProvider == .codex || store.selectedProvider == .kimiCode || store.selectedProvider == .gemini || store.selectedProvider == .copilot || store.selectedProvider == .antigravity { return false }
+        if store.payload.current.calls > 0 || store.payload.current.inputTokens > 0 || store.payload.current.outputTokens > 0 { return false }
         if providerHasUsageInAllPayload { return false }
         return true
     }
@@ -427,9 +435,6 @@ private struct Header: View {
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
                     FlameWordmark()
-                    Text(L("Your AI Bill, Itemized"))
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(.secondary)
                 }
                 Spacer()
                 if updateChecker.anyUpdateAvailable || updateChecker.updateError != nil {
@@ -729,29 +734,6 @@ struct FooterBar: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Menu {
-                ForEach(SupportedCurrency.allCases) { currency in
-                    Button {
-                        applyCurrency(code: currency.rawValue)
-                    } label: {
-                        if currency.rawValue == store.currency {
-                            Label(currency.pickerLabel, systemImage: "checkmark")
-                        } else {
-                            Text(currency.pickerLabel)
-                        }
-                    }
-                }
-            } label: {
-                Label(store.currency, systemImage: "dollarsign.circle")
-                    .font(.system(size: 11, weight: .medium))
-                    .labelStyle(.titleAndIcon)
-            }
-            .menuStyle(.button)
-            .menuIndicator(.hidden)
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .fixedSize()
-
             Button {
                 refreshNow()
             } label: {
@@ -781,22 +763,9 @@ struct FooterBar: View {
             Text(AppVersion.displayBundleShortVersion)
                 .font(.system(size: 10, weight: .regular, design: .monospaced))
                 .foregroundStyle(.tertiary)
-
-            Button { openReport() } label: {
-                Label(L("Full Report"), systemImage: "terminal")
-                    .font(.system(size: 11, weight: .semibold))
-                    .labelStyle(.titleAndIcon)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            .tint(Theme.brandAccent)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-    }
-
-    private func openReport() {
-        TerminalLauncher.open(subcommand: ["report"])
     }
 
     private func refreshNow() {
@@ -847,26 +816,4 @@ struct FooterBar: View {
         }
     }
 
-    /// Instant-feeling currency switch. Updates the symbol and any cached FX rate on the main
-     /// thread right away so the UI redraws the next frame, then fetches a fresh rate in the
-     /// background. CLI config is persisted so other codeburn commands stay in sync.
-    private func applyCurrency(code: String) {
-        let symbol = CurrencyState.symbolForCode(code)
-
-        Task {
-            let cached = await FXRateCache.shared.cachedRate(for: code)
-            if let cached {
-                store.currency = code
-                CurrencyState.shared.apply(code: code, rate: cached, symbol: symbol)
-            }
-
-            let fresh = await FXRateCache.shared.rate(for: code)
-            if let rate = fresh ?? cached {
-                store.currency = code
-                CurrencyState.shared.apply(code: code, rate: rate, symbol: symbol)
-            }
-        }
-
-        CLICurrencyConfig.persist(code: code)
-    }
 }

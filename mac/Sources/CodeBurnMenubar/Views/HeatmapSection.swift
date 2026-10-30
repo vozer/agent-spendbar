@@ -36,8 +36,7 @@ private let gregorianCalendar: Calendar = {
     return c
 }()
 
-/// Switchable insight visualizations: trend, calendar, forecast, pulse, stats,
-/// optimize, plus provider-specific plan views.
+/// Usage views show token or call counts, with quota plans for supported providers.
 struct HeatmapSection: View {
     @Environment(AppStore.self) private var store
 
@@ -56,17 +55,9 @@ struct HeatmapSection: View {
     }
 
     private var visibleModes: [InsightMode] {
-        // Plan sources from a provider's live quota endpoint. Currently
-        // implemented for Claude (Anthropic), Codex (ChatGPT), Kimi Code,
-        // Gemini (Google Code Assist), Copilot (GitHub), and Antigravity
-        // (local language server on 127.0.0.1). Hidden on All / Cursor /
-        // Droid, which have no quota source of their own.
-        InsightMode.allCases.filter { mode in
-            if mode == .plan {
-                return store.selectedProvider == .claude || store.selectedProvider == .codex || store.selectedProvider == .kimiCode || store.selectedProvider == .gemini || store.selectedProvider == .copilot || store.selectedProvider == .antigravity
-            }
-            return true
-        }
+        let planProviders: [ProviderFilter] = [.claude, .codex, .kimiCode, .gemini, .copilot, .antigravity]
+        return (planProviders.contains(store.selectedProvider) ? [InsightMode.plan] : [])
+            + [.trend, .calendar, .pulse]
     }
 
     private func ensureValidSelection() {
@@ -94,10 +85,10 @@ struct HeatmapSection: View {
             }
         case .trend: TrendInsight(days: store.payload.history.daily, period: store.trendPeriod)
         case .calendar: ContributionHeatmapInsight(days: store.payload.history.daily)
-        case .forecast: ForecastInsight(days: store.payload.history.daily)
         case .pulse: PulseInsight(payload: store.payload)
-        case .stats: StatsInsight(payload: store.payload)
-        case .optimize: OptimizeInsight(payload: store.payload)
+        // Retained modes can arrive from a stale selection, but their money
+        // views are no longer reachable from the popover.
+        case .forecast, .stats, .optimize: EmptyView()
         }
     }
 }
@@ -156,11 +147,10 @@ private struct TrendInsight: View {
     var body: some View {
         let dayCount = trendDayCount
         let bars = buildTrendBars(from: days, dayCount: dayCount)
-        let stats = computeTrendStats(bars: bars, allDays: days, dayCount: dayCount)
-        // Per-provider history doesn't carry a token breakdown yet, so tokens mode falls back to $.
         let totalTokens = bars.reduce(0.0) { $0 + $1.tokens }
-        let useTokens = trendUsesTokens(showTokens: showTokens, totalTokens: totalTokens)
-        let metric: (TrendBar) -> Double = useTokens ? { $0.tokens } : { $0.cost }
+        let useTokens = totalTokens > 0
+        let metric: (TrendBar) -> Double = useTokens ? { $0.tokens } : { Double($0.calls) }
+        let stats = computeTrendStats(bars: bars, allDays: days, dayCount: dayCount, useTokens: useTokens)
         let maxValue = max(bars.map(metric).max() ?? 1, 0.01)
         let avgValue = bars.isEmpty ? 0 : bars.map(metric).reduce(0, +) / Double(bars.count)
         let peakValue = bars.filter({ metric($0) > 0 }).max(by: { metric($0) < metric($1) })
@@ -172,16 +162,13 @@ private struct TrendInsight: View {
                     Text(L("Last %lld days", dayCount))
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.tertiary)
-                    Text(formatHero(useTokens: useTokens, tokens: totalTokens, dollars: stats.totalThisWindow))
+                    Text(formatUsage(useTokens: useTokens, value: stats.totalThisWindow))
                         .font(.system(size: 18, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(.primary)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 4) {
-                    if totalTokens > 0 {
-                        TrendMetricToggle(showTokens: $showTokens)
-                    }
                     if let delta = stats.deltaPercent {
                         HStack(spacing: 3) {
                             Image(systemName: delta >= 0 ? "arrow.up.right" : "arrow.down.right")
@@ -213,12 +200,14 @@ private struct TrendInsight: View {
         }
     }
 
-    private func formatHero(useTokens: Bool, tokens: Double, dollars: Double) -> String {
-        useTokens ? L("%@ tokens", formatTokens(tokens)) : dollars.asCurrency()
+    private func formatUsage(useTokens: Bool, value: Double) -> String {
+        useTokens
+            ? L("%@ tokens", formatTokens(value))
+            : L("%@ calls", Int(value).asThousandsSeparated())
     }
 
-    private func formatValue(_ v: Double, useTokens: Bool) -> String {
-        useTokens ? "\(formatTokens(v)) tok" : v.asCompactCurrency()
+    private func formatValue(_ value: Double, useTokens: Bool) -> String {
+        formatUsage(useTokens: useTokens, value: value)
     }
 
     private func peakLabel(_ peak: TrendBar?, metric: (TrendBar) -> Double, useTokens: Bool) -> String {
@@ -236,33 +225,6 @@ private struct TrendInsight: View {
         let parts = ymd.split(separator: "-")
         guard parts.count == 3 else { return ymd }
         return "\(parts[1])/\(parts[2])"
-    }
-}
-
-private struct TrendMetricToggle: View {
-    @Binding var showTokens: Bool
-
-    var body: some View {
-        HStack(spacing: 2) {
-            pill(L("Cost"), selected: !showTokens) { showTokens = false }
-            pill(L("Tokens"), selected: showTokens) { showTokens = true }
-        }
-    }
-
-    private func pill(_ label: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.system(size: 10, weight: .medium))
-                .fixedSize()
-                .foregroundStyle(selected ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
-                .padding(.horizontal, 7)
-                .padding(.vertical, 2)
-                .background(
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(selected ? AnyShapeStyle(Theme.brandAccent) : AnyShapeStyle(Color.secondary.opacity(0.10)))
-                )
-        }
-        .buttonStyle(.plain)
     }
 }
 
@@ -376,9 +338,8 @@ private struct BarColumn: View {
 
 private struct BarTooltipCard: View {
     let bar: TrendBar
-    /// Value shown in the tooltip header on days without a model breakdown, in
-    /// the metric the trend chart is using (tokens when the bars carry any, else
-    /// cost). Days with a breakdown show a Total row instead.
+    /// Value shown when a day has no model breakdown. Otherwise the rows show
+    /// token and call counts by model.
     let value: Double
     let formatValue: (Double) -> String
     @Environment(\.colorScheme) private var colorScheme
@@ -429,14 +390,12 @@ private struct BarTooltipCard: View {
                                 .foregroundStyle(primaryText)
                                 .lineLimit(1)
                             Spacer()
-                            if m.cost > 0 {
-                                Text(m.cost.asCompactCurrency())
-                                    .font(.codeMono(size: 9.5, weight: .semibold))
-                                    .foregroundStyle(secondaryText)
-                            }
                             Text("\(formatTokensCompact(Double(m.totalTokens))) tok")
                                 .font(.codeMono(size: 9.5, weight: .medium))
                                 .foregroundStyle(tertiaryText)
+                            Text("\(m.calls) calls")
+                                .font(.codeMono(size: 9.5, weight: .medium))
+                                .foregroundStyle(secondaryText)
                         }
                     }
 
@@ -454,14 +413,12 @@ private struct BarTooltipCard: View {
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(primaryText)
                         Spacer()
-                        if bar.cost > 0 {
-                            Text(bar.cost.asCompactCurrency())
-                                .font(.codeMono(size: 9.5, weight: .semibold))
-                                .foregroundStyle(Theme.brandAccent)
-                        }
                         Text("\(formatTokensCompact(bar.tokens)) tok")
                             .font(.codeMono(size: 9.5, weight: .medium))
                             .foregroundStyle(tertiaryText)
+                        Text("\(bar.calls) calls")
+                            .font(.codeMono(size: 9.5, weight: .medium))
+                            .foregroundStyle(secondaryText)
                     }
                 }
             }
@@ -515,14 +472,10 @@ private struct MiniStat: View {
     }
 }
 
-func trendUsesTokens(showTokens: Bool, totalTokens: Double) -> Bool {
-    showTokens && totalTokens > 0
-}
-
 private struct TrendBar: Identifiable {
     var id: String { date }
     let date: String
-    let cost: Double
+    let calls: Int
     let inputTokens: Double
     let outputTokens: Double
     let isToday: Bool
@@ -554,7 +507,7 @@ private func buildTrendBars(from days: [DailyHistoryEntry], dayCount: Int) -> [T
         let entry = entryByDate[key]
         bars.append(TrendBar(
             date: key,
-            cost: entry?.cost ?? 0,
+            calls: entry?.calls ?? 0,
             inputTokens: Double(entry?.inputTokens ?? 0),
             outputTokens: Double(entry?.outputTokens ?? 0),
             isToday: key == todayKey,
@@ -564,11 +517,12 @@ private func buildTrendBars(from days: [DailyHistoryEntry], dayCount: Int) -> [T
     return bars
 }
 
-private func computeTrendStats(bars: [TrendBar], allDays: [DailyHistoryEntry], dayCount: Int) -> TrendStats {
-    let total = bars.reduce(0.0) { $0 + $1.cost }
-    let active = bars.filter { $0.cost > 0 }.count
+private func computeTrendStats(bars: [TrendBar], allDays: [DailyHistoryEntry], dayCount: Int, useTokens: Bool) -> TrendStats {
+    let value: (TrendBar) -> Double = useTokens ? { $0.tokens } : { Double($0.calls) }
+    let total = bars.reduce(0.0) { $0 + value($1) }
+    let active = bars.filter { value($0) > 0 }.count
     let avg = bars.isEmpty ? 0 : total / Double(bars.count)
-    let peak = bars.filter { $0.cost > 0 }.max(by: { $0.cost < $1.cost })
+    let peak = bars.filter { value($0) > 0 }.max(by: { value($0) < value($1) })
 
     let calendar = gregorianCalendar
     let formatter = yyyymmdd
@@ -581,7 +535,7 @@ private func computeTrendStats(bars: [TrendBar], allDays: [DailyHistoryEntry], d
         let thisStartStr = formatter.string(from: thisStart)
         let priorTotal = allDays
             .filter { $0.date >= priorStartStr && $0.date < thisStartStr }
-            .reduce(0.0) { $0 + $1.cost }
+            .reduce(0.0) { $0 + (useTokens ? Double($1.inputTokens + $1.outputTokens) : Double($1.calls)) }
         if priorTotal > 0 {
             deltaPercent = ((total - priorTotal) / priorTotal) * 100
         }
@@ -601,6 +555,10 @@ private func computeTrendStats(bars: [TrendBar], allDays: [DailyHistoryEntry], d
     )
 }
 
+func trendUsesTokens(showTokens: Bool, totalTokens: Double) -> Bool {
+    showTokens && totalTokens > 0
+}
+
 // MARK: - Calendar
 
 private struct ContributionHeatmapInsight: View {
@@ -615,7 +573,7 @@ private struct ContributionHeatmapInsight: View {
         GeometryReader { geo in
             let weekCount = adaptiveWeekCount(for: geo.size.width)
             let weeks = buildContributionWeeks(from: days, weekCount: weekCount)
-            let stats = computeContributionStats(weeks: weeks)
+            let stats = computeUsageContributionStats(weeks: weeks)
             let hoveredDay = weeks.flatMap(\.days).first { $0.id == hoveredDayID }
 
             VStack(alignment: .leading, spacing: 10) {
@@ -624,7 +582,7 @@ private struct ContributionHeatmapInsight: View {
                         Text(L("Daily activity"))
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(.tertiary)
-                        Text(stats.total.asCurrency())
+                        Text(usageCount(stats.total, usesTokens: stats.usesTokens))
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
                             .monospacedDigit()
                             .foregroundStyle(.primary)
@@ -665,12 +623,12 @@ private struct ContributionHeatmapInsight: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
 
-                ContributionDayDetail(day: hoveredDay, fallbackStats: stats)
+                ContributionDayDetail(day: hoveredDay)
                     .animation(.easeInOut(duration: 0.12), value: hoveredDayID)
 
                 HStack(spacing: 14) {
                     MiniStat(label: L("Peak day"), value: stats.peakLabel)
-                    MiniStat(label: L("Avg active"), value: stats.avgActive.asCompactCurrency())
+                    MiniStat(label: L("Avg active"), value: usageCount(stats.avgActive, usesTokens: stats.usesTokens))
                     MiniStat(label: L("Streak"), value: L("%lldd", stats.currentStreak))
                 }
             }
@@ -692,6 +650,11 @@ private struct ContributionHeatmapInsight: View {
         case 6: return L("Sun")
         default: return ""
         }
+    }
+
+    private func usageCount(_ value: Int, usesTokens: Bool) -> String {
+        let formatted = usesTokens ? formatTokensForContribution(value) : value.asThousandsSeparated()
+        return usesTokens ? L("%@ tokens", formatted) : L("%@ calls", formatted)
     }
 }
 
@@ -735,7 +698,6 @@ private struct ContributionCell: View {
 
 private struct ContributionDayDetail: View {
     let day: ContributionDay?
-    let fallbackStats: ContributionStats
 
     var body: some View {
         HStack(spacing: 12) {
@@ -775,8 +737,13 @@ private struct ContributionDayDetail: View {
     private var value: String {
         guard let day else { return L("Hover a day") }
         if day.isFuture { return L("Future day") }
-        if day.cost <= 0 && day.calls == 0 { return L("No tracked usage") }
-        return day.cost.asCompactCurrency()
+        if day.totalTokens > 0 {
+            return L("%@ tokens", formatTokensForContribution(day.totalTokens))
+        }
+        if day.calls > 0 {
+            return L("%@ calls", day.calls.asThousandsSeparated())
+        }
+        return L("No tracked usage")
     }
 
     private var calls: String {
@@ -830,14 +797,11 @@ struct ContributionDay: Identifiable, Equatable {
 
     @MainActor var helpText: String {
         if isFuture { return L("%@: future day", prettyDate(date)) }
-        if cost <= 0 && calls == 0 { return L("%@: no tracked usage", prettyDate(date)) }
-        return L(
-            "%1$@: %2$@, %3$lld calls, %4$@ tokens",
-            prettyDate(date),
-            cost.asCompactCurrency(),
-            calls,
-            formatTokensForContribution(totalTokens)
-        )
+        guard calls > 0 || totalTokens > 0 else { return L("%@: no tracked usage", prettyDate(date)) }
+        let count = totalTokens > 0
+            ? L("%@ tokens", formatTokensForContribution(totalTokens))
+            : L("%@ calls", calls.asThousandsSeparated())
+        return "\(prettyDate(date)): \(count)"
     }
 }
 
@@ -881,7 +845,14 @@ func buildContributionWeeks(
         guard let date = calendar.date(byAdding: .day, value: offset, to: firstWeekStart) else { continue }
         if date <= today { visibleKeys.append(formatter.string(from: date)) }
     }
-    let maxCost = visibleKeys.compactMap { entryByDate[$0]?.cost }.max() ?? 0
+    let useTokens = visibleKeys.contains { key in
+        guard let entry = entryByDate[key] else { return false }
+        return entry.inputTokens + entry.outputTokens > 0
+    }
+    let maxUsage = visibleKeys.compactMap { key -> Int? in
+        guard let entry = entryByDate[key] else { return nil }
+        return useTokens ? entry.inputTokens + entry.outputTokens : entry.calls
+    }.max() ?? 0
 
     var weeks: [ContributionWeek] = []
     for weekOffset in 0..<visibleWeekCount {
@@ -895,13 +866,17 @@ func buildContributionWeeks(
             let entry = entryByDate[key]
             let isFuture = date > today
             let cost = isFuture ? 0 : (entry?.cost ?? 0)
+            let calls = isFuture ? 0 : (entry?.calls ?? 0)
+            let inputTokens = isFuture ? 0 : (entry?.inputTokens ?? 0)
+            let outputTokens = isFuture ? 0 : (entry?.outputTokens ?? 0)
+            let usage = useTokens ? inputTokens + outputTokens : calls
             contributionDays.append(ContributionDay(
                 date: key,
                 cost: cost,
-                calls: isFuture ? 0 : (entry?.calls ?? 0),
-                inputTokens: isFuture ? 0 : (entry?.inputTokens ?? 0),
-                outputTokens: isFuture ? 0 : (entry?.outputTokens ?? 0),
-                level: isFuture ? 0 : contributionLevel(value: cost, maxValue: maxCost),
+                calls: calls,
+                inputTokens: inputTokens,
+                outputTokens: outputTokens,
+                level: isFuture ? 0 : contributionLevel(value: Double(usage), maxValue: Double(maxUsage)),
                 isToday: key == todayKey,
                 isFuture: isFuture
             ))
@@ -936,6 +911,45 @@ func buildContributionWeeks(
         avgActive: avg,
         peakLabel: peakLabel,
         currentStreak: streak
+    )
+}
+
+private struct UsageContributionStats {
+    let total: Int
+    let activeDays: Int
+    let avgActive: Int
+    let peakLabel: String
+    let currentStreak: Int
+    let usesTokens: Bool
+}
+
+@MainActor private func computeUsageContributionStats(weeks: [ContributionWeek]) -> UsageContributionStats {
+    let days = weeks.flatMap(\.days).filter { !$0.isFuture }
+    let usesTokens = days.contains { $0.totalTokens > 0 }
+    let usage: (ContributionDay) -> Int = usesTokens ? { $0.totalTokens } : { $0.calls }
+    let active = days.filter { usage($0) > 0 }
+    let total = active.reduce(0) { $0 + usage($1) }
+    let average = active.isEmpty ? 0 : total / active.count
+    let peak = active.max { usage($0) < usage($1) }
+    let peakLabel = peak.map { day in
+        let count = usage(day)
+        let formatted = usesTokens ? formatTokensForContribution(count) : count.asThousandsSeparated()
+        let value = usesTokens ? L("%@ tokens", formatted) : L("%@ calls", formatted)
+        return L("%1$@ on %2$@", value, shortContributionDate(day.date))
+    } ?? "—"
+
+    var streak = 0
+    for day in days.reversed() {
+        if usage(day) > 0 { streak += 1 } else { break }
+    }
+
+    return UsageContributionStats(
+        total: total,
+        activeDays: active.count,
+        avgActive: average,
+        peakLabel: peakLabel,
+        currentStreak: streak,
+        usesTokens: usesTokens
     )
 }
 
@@ -1105,19 +1119,8 @@ private struct PulseInsight: View {
             HStack(spacing: 10) {
                 PulseTile(label: L("Cache hit"), value: cacheHitText, color: Theme.brandAccent)
                 PulseTile(label: L("1-shot"), value: oneShotText, color: oneShotColor)
-                PulseTile(
-                    label: L("Cost / session"),
-                    value: SessionCountLabel.averageText(
-                        SessionCountLabel.isExact(payload.current.sessionCountBasis) && payload.current.sessions > 0
-                            ? payload.current.cost / Double(payload.current.sessions)
-                            : nil,
-                        basis: payload.current.sessionCountBasis,
-                        format: { $0.asCompactCurrency() }
-                    ),
-                    color: .secondary
-                )
+                PulseTile(label: L("Avg/session"), value: averageUsagePerSession, color: .secondary)
             }
-            CostPerEditCaption(models: payload.current.modelEfficiency)
         }
     }
 
@@ -1133,6 +1136,30 @@ private struct PulseInsight: View {
 
     private var oneShotColor: Color {
         payload.current.oneShotRate == nil ? .secondary : Theme.brandAccent
+    }
+
+    private var averageUsagePerSession: String {
+        let current = payload.current
+        guard current.sessions > 0 else { return "—" }
+        let totalTokens = current.inputTokens + current.outputTokens
+        let usesTokens = totalTokens > 0
+        let total = usesTokens ? Double(totalTokens) : Double(current.calls)
+        return SessionCountLabel.averageText(
+            total / Double(current.sessions),
+            basis: current.sessionCountBasis,
+            format: { value in
+                if usesTokens {
+                    return L("%@ tokens", formatTokens(value))
+                }
+                return L("%@ calls", String(format: "%.1f", value))
+            }
+        )
+    }
+
+    private func formatTokens(_ value: Double) -> String {
+        if value >= 1_000_000 { return String(format: "%.1fM", value / 1_000_000) }
+        if value >= 1_000 { return String(format: "%.0fK", value / 1_000) }
+        return String(format: "%.0f", value)
     }
 }
 
@@ -1158,53 +1185,6 @@ private struct PulseTile: View {
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color.secondary.opacity(0.06))
         )
-    }
-}
-
-private struct CostPerEditCaption: View {
-    let models: [ModelEfficiencyEntry]
-
-    var body: some View {
-        let valid = models.compactMap { m -> (String, Double)? in
-            guard let cpe = m.costPerEdit, cpe > 0 else { return nil }
-            return (m.name, cpe)
-        }.sorted(by: { $0.1 < $1.1 })
-
-        if let best = valid.first {
-            HStack(spacing: 4) {
-                Image(systemName: "pencil.line")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(.tertiary)
-                Text(L("Cost/edit"))
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.tertiary)
-                Text(formatCPE(best.1))
-                    .font(.codeMono(size: 10.5, weight: .semibold))
-                    .foregroundStyle(Theme.brandAccent)
-                Text(best.0)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                if valid.count > 1, let worst = valid.last, worst.0 != best.0 {
-                    Text("—")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.quaternary)
-                    Text(formatCPE(worst.1))
-                        .font(.codeMono(size: 10.5, weight: .semibold))
-                        .foregroundStyle(.primary)
-                    Text(worst.0)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                Spacer()
-            }
-        }
-    }
-
-    private func formatCPE(_ v: Double) -> String {
-        if v < 0.01 { return String(format: "$%.3f", v) }
-        return String(format: "$%.2f", v)
     }
 }
 

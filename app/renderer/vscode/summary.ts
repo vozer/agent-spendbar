@@ -1,14 +1,13 @@
 import { t } from '../i18n'
-import { estimatedPortion, formatCount, formatResetTime, formatUsd, isEstimatedCost, setActiveCurrency, type ActiveCurrency } from '../lib/format'
+import { formatCompact, formatCount, formatResetTime, setActiveCurrency, type ActiveCurrency } from '../lib/format'
 import { PROVIDER_NAMES } from '../lib/providers'
 import type { MenubarPayload, ProviderName, QuotaProvider } from '../lib/types'
 
-export type Figure = { cost: number; estimated: boolean }
-export type Ranked = { name: string; cost: number; estimated: boolean }
+export type Figure = { sessions?: number; calls?: number; inputTokens?: number; outputTokens?: number }
+export type Ranked = Figure & { name: string }
 export type QuotaLine = { provider: string; plan: string | null; label: string; percent: number; resetsAt: string | null }
 
-/** Everything the status bar, its tooltip, the sidebar and Copy summary show.
- *  Small and plain so the last one is cached and painted at the next startup. */
+/** The status bar, tooltip, sidebar and copy command use the same usage snapshot. */
 export type Summary = {
   at: number
   currency: ActiveCurrency
@@ -19,14 +18,17 @@ export type Summary = {
   topProjects: Ranked[]
   workspace: { label: string; today: Figure; week: Figure | null } | null
   quota: QuotaLine[]
-  optimize: { findingCount: number; savingsUSD: number } | null
 }
 
 const USD: ActiveCurrency = { code: 'USD', symbol: '$', rate: 1 }
 
-/** The #1657 rule, as every other surface applies it. Needs the payload's currency active. */
 export function figureOf(payload: MenubarPayload): Figure {
-  return { cost: payload.current.cost, estimated: isEstimatedCost(payload.current.cost, estimatedPortion(payload.current)) }
+  return {
+    sessions: payload.current.sessions,
+    calls: payload.current.calls,
+    inputTokens: payload.current.inputTokens,
+    outputTokens: payload.current.outputTokens,
+  }
 }
 
 export function buildSummary(input: {
@@ -47,31 +49,59 @@ export function buildSummary(input: {
     today: figureOf(input.today),
     week: input.week ? figureOf(input.week) : null,
     month: input.month ? figureOf(input.month) : null,
-    topModels: (ranked.current.topModels ?? []).slice(0, 5).map(row => ({ name: row.name, cost: row.cost, estimated: isEstimatedCost(row.cost, row.estimatedCostUSD) })),
-    topProjects: (ranked.current.topProjects ?? []).slice(0, 5).map(row => ({ name: row.name, cost: row.cost, estimated: false })),
+    topModels: (ranked.current.topModels ?? []).slice(0, 5).map(row => ({
+      name: row.name,
+      calls: row.calls,
+      inputTokens: row.inputTokens,
+      outputTokens: row.outputTokens,
+    })),
+    topProjects: (ranked.current.topProjects ?? []).slice(0, 5).map(row => ({
+      name: row.name,
+      sessions: row.sessions,
+      calls: row.sessionDetails.reduce((sum, session) => sum + session.calls, 0),
+      inputTokens: row.sessionDetails.reduce((sum, session) => sum + session.inputTokens, 0),
+      outputTokens: row.sessionDetails.reduce((sum, session) => sum + session.outputTokens, 0),
+    })),
     workspace: input.workspace
       ? { label: input.workspace.label, today: figureOf(input.workspace.today), week: input.workspace.week ? figureOf(input.workspace.week) : null }
       : null,
     quota: quotaLines(input.quota ?? []),
-    optimize: input.optimize,
   }
 }
 
-/** One line per connected provider: its most-used window, the one that runs out first. */
+/** One line per connected provider, using the window with the highest usage. */
 export function quotaLines(quota: QuotaProvider[]): QuotaLine[] {
   const lines: QuotaLine[] = []
   for (const provider of quota) {
     if (provider.connection !== 'connected' && provider.connection !== 'stale') continue
-    const windows = [provider.primary, ...provider.details].filter((w): w is NonNullable<typeof w> => w !== null)
-    const top = windows.reduce<typeof windows[number] | null>((best, w) => (best === null || w.percent > best.percent ? w : best), null)
+    const windows = [provider.primary, ...provider.details].filter((window): window is NonNullable<typeof window> => window !== null)
+    const top = windows.reduce<typeof windows[number] | null>((best, window) => best === null || window.percent > best.percent ? window : best, null)
     if (!top) continue
     lines.push({ provider: provider.provider, plan: provider.planLabel, label: top.label, percent: top.percent, resetsAt: top.resetsAt })
   }
   return lines
 }
 
-export function money(figure: Figure): string {
-  return `${figure.estimated ? '~' : ''}${formatUsd(figure.cost)}`
+function count(value: number | undefined, unit: 'call' | 'session'): string {
+  return typeof value === 'number' ? formatCount(value, unit) : '—'
+}
+
+export function usageText(figure: Figure): string {
+  const parts = [
+    count(figure.sessions, 'session'),
+    count(figure.calls, 'call'),
+    typeof figure.inputTokens === 'number' && typeof figure.outputTokens === 'number'
+      ? `${formatCompact(figure.inputTokens + figure.outputTokens)} tokens`
+      : null,
+  ].filter((part): part is string => part !== null && part !== '—')
+  return parts.length > 0 ? parts.join(' · ') : '—'
+}
+
+export function rankedText(row: Ranked): string {
+  const calls = count(row.calls, 'call')
+  const sessions = count(row.sessions, 'session')
+  const parts = [calls !== '—' ? calls : null, sessions !== '—' ? sessions : null]
+  return parts.filter((part): part is string => part !== null).join(' · ') || usageText(row)
 }
 
 function percent(value: number): string {
@@ -83,13 +113,12 @@ export type StatusBarFormat = 'cost' | 'costAndQuota' | 'workspace' | 'hidden'
 export function statusText(summary: Summary | null, format: StatusBarFormat): string {
   if (!summary) return '$(flame)'
   setActiveCurrency(summary.currency)
-  const today = money(summary.today)
   if (format === 'costAndQuota' && summary.quota.length > 0) {
     const top = Math.max(...summary.quota.map(line => line.percent))
-    return `$(flame) ${today} · ${percent(top)}`
+    return `$(flame) ${percent(top)} · ${count(summary.today.calls, 'call')}`
   }
-  if (format === 'workspace' && summary.workspace) return `$(flame) ${money(summary.workspace.today)} / ${today}`
-  return `$(flame) ${today}`
+  if (format === 'workspace' && summary.workspace) return `$(flame) ${count(summary.workspace.today.calls, 'call')}`
+  return `$(flame) ${count(summary.today.calls, 'call')}`
 }
 
 function providerName(line: QuotaLine): string {
@@ -110,44 +139,38 @@ function cell(text: string): string {
   return text.replace(/[\\`*_[\]()|<>!$#~]/g, '\\$&')
 }
 
+function usageRows(summary: Summary): Array<[string, string]> {
+  const rows: Array<[string, string]> = [[t('common.period.today'), usageText(summary.today)]]
+  if (summary.week) rows.push([t('common.period.week'), usageText(summary.week)])
+  if (summary.month) rows.push([t('common.period.month'), usageText(summary.month)])
+  if (summary.workspace) rows.push([t('ide.status.workspaceToday', { name: summary.workspace.label }), usageText(summary.workspace.today)])
+  return rows
+}
+
 /** The status bar tooltip: plain markdown, one command link, no HTML. */
 export function tooltipMarkdown(summary: Summary): string {
   setActiveCurrency(summary.currency)
-  const rows: Array<[string, string]> = [[t('common.period.today'), money(summary.today)]]
-  if (summary.week) rows.push([t('common.period.week'), money(summary.week)])
-  if (summary.month) rows.push([t('common.period.month'), money(summary.month)])
-  if (summary.workspace) rows.push([t('ide.status.workspaceToday', { name: summary.workspace.label }), money(summary.workspace.today)])
-  const out = ['**CodeBurn**', '', '| | |', '|:--|--:|', ...rows.map(([label, value]) => `| ${cell(label)} | ${value} |`), '']
+  const out = ['**CodeBurn**', '', '| | |', '|:--|--:|', ...usageRows(summary).map(([label, value]) => `| ${cell(label)} | ${value} |`), '']
   const top = summary.topModels[0]
-  if (top) out.push(`${t('ide.status.topModel')}: ${cell(top.name)} · ${money(top)}`, '')
+  if (top) out.push(`${t('ide.status.topModel')}: ${cell(top.name)} · ${rankedText(top)}`, '')
   if (summary.quota.length > 0) {
     out.push(`**${t('shell.nav.plans')}**`, '')
     for (const line of summary.quota) out.push(`- ${quotaText(line)}`)
     out.push('')
   }
-  const estimated = [summary.today, summary.week, summary.month, summary.workspace?.today, top].some(figure => figure?.estimated)
-  if (estimated) out.push(`_${t('shared.usd.estimated')}_`, '')
   out.push(`[${t('ide.status.open')}](command:codeburn.openDashboard)`)
   return out.join('\n')
 }
 
-/** Copy summary: plain text a person pastes into a chat or a standup note. */
+/** Copy a compact usage summary as plain text. */
 export function summaryText(summary: Summary): string {
   setActiveCurrency(summary.currency)
   const lines = [`CodeBurn · ${new Date(summary.at).toLocaleDateString()}`]
-  lines.push(`${t('common.period.today')}: ${money(summary.today)}`)
-  if (summary.week) lines.push(`${t('common.period.week')}: ${money(summary.week)}`)
-  if (summary.month) lines.push(`${t('common.period.month')}: ${money(summary.month)}`)
-  if (summary.workspace) {
-    lines.push(`${summary.workspace.label}: ${money(summary.workspace.today)}${summary.workspace.week ? ` · ${t('common.period.week')} ${money(summary.workspace.week)}` : ''}`)
-  }
+  for (const [label, value] of usageRows(summary)) lines.push(`${label}: ${value}`)
   if (summary.topModels.length > 0) {
-    lines.push(`${t('ide.sidebar.topModels')}: ${summary.topModels.slice(0, 3).map(row => `${row.name} ${money(row)}`).join(', ')}`)
+    lines.push(`${t('ide.sidebar.topModels')}: ${summary.topModels.slice(0, 3).map(row => `${row.name} ${rankedText(row)}`).join(', ')}`)
   }
   for (const line of summary.quota) lines.push(quotaText(line))
-  if (summary.optimize && summary.optimize.findingCount > 0) {
-    lines.push(`${t('shell.nav.optimize')}: ${formatCount(summary.optimize.findingCount, 'finding')} · ${t('ide.sidebar.savings', { amount: formatUsd(summary.optimize.savingsUSD) })}`)
-  }
   return lines.join('\n')
 }
 

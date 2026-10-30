@@ -708,3 +708,5 @@
 "Monthly usage" = "月度用量";
 "Percent of monthly budget used. A tilde marks estimated or partial data." = "已用月度预算的百分比。波浪号表示数据为估算或部分数据。";
 "How often the app refreshes local provider usage. Auto refreshes every 30 seconds while you're plugged in and backs off on battery." = "本地提供商使用量的刷新频率。自动模式会在接通电源时每 30 秒刷新一次，并在使用电池时降低频率。";
+"Avg/session" = "每次会话平均";
+"Other models · %1$@ calls · %2$@ tokens" = "其他模型 · 调用 %1$@ 次 · %2$@ 个令牌";

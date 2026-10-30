@@ -6,74 +6,20 @@ import { Panel } from '../components/Panel'
 import { ProviderLogo, hasProviderLogo } from '../components/ProviderLogo'
 import { SectionSkeleton } from '../components/Skeleton'
 import type { Section } from '../components/Sidebar'
-import { StaleBanner } from '../components/StaleBanner'
 import { BarNav } from '../components/TopBar'
 import { usePolled } from '../hooks/usePolled'
-import { localeTag, t } from '../i18n'
-import { formatConverted, formatResetTime } from '../lib/format'
+import { t } from '../i18n'
+import { formatResetTime } from '../lib/format'
 import { codeburn } from '../lib/ipc'
 import { motionClass } from '../lib/motion'
 import { PROVIDER_NAMES, PROVIDER_OWNERS, readDisabledProviders } from '../lib/providers'
-import { reportMemoKey } from '../lib/reportMemoKey'
-import type { JsonPlanSummary, Period, PlanId, PlanProvider, QuotaProvider, QuotaWindow, StatusJson } from '../lib/types'
+import type { Period, QuotaProvider, QuotaWindow } from '../lib/types'
 import type { SettingsPane } from './Settings'
-
-const PROVIDER_ORDER: PlanProvider[] = ['all', 'claude', 'codex', 'cursor', 'grok', 'antigravity']
-
-const PLAN_NAMES: Record<PlanId, string> = {
-  'claude-pro': 'Claude Pro',
-  'claude-max': 'Claude Max',
-  'claude-max-5x': 'Claude Max 5x',
-  'cursor-pro': 'Cursor Pro',
-  supergrok: 'SuperGrok',
-  'supergrok-heavy': 'SuperGrok Heavy',
-  'google-ai-pro': 'Google AI Pro',
-  'google-ai-ultra-5x': 'Google AI Ultra 5x',
-  'google-ai-ultra-20x': 'Google AI Ultra 20x',
-  custom: 'Custom plan',
-  none: 'API usage',
-}
-
-function fmtPct(n: number): string {
-  return Number.isInteger(n) ? `${n}%` : `${n.toFixed(1)}%`
-}
 
 /** Honest copy for a 429 backoff window (the upstream quota endpoint rate
  *  limited us), replacing the generic "waiting" note. */
 export function rateLimitedNote(provider: QuotaProvider['provider']): string {
   return t('plans.quota.rateLimited', { owner: PROVIDER_OWNERS[provider] })
-}
-
-function cycleEndDate(plan: JsonPlanSummary): Date | null {
-  const date = new Date(plan.periodEnd)
-  if (Number.isNaN(date.getTime())) return null
-  date.setDate(date.getDate() - 1)
-  return date
-}
-
-function formatShortDate(value: string | Date): string {
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return t('plans.date.unknown')
-  return new Intl.DateTimeFormat(localeTag(), {
-    month: 'short',
-    day: 'numeric',
-  }).format(date)
-}
-
-function planSummaries(status: StatusJson): JsonPlanSummary[] {
-  const plans = status.plans
-  if (plans) {
-    const ordered = PROVIDER_ORDER.flatMap(provider => {
-      const plan = plans[provider]
-      return plan ? [plan] : []
-    })
-    if (ordered.length > 0) return ordered
-  }
-  return status.plan ? [status.plan] : []
-}
-
-function manualPlanSummaries(status: StatusJson): JsonPlanSummary[] {
-  return planSummaries(status).filter(plan => plan.provider !== 'claude' && plan.provider !== 'codex')
 }
 
 // A single anomalous poll must not flip a live provider to "disconnected". A
@@ -163,7 +109,7 @@ function useStableQuota(raw: QuotaProvider[] | null): QuotaProvider[] | null {
   return raw === null ? null : stable.current
 }
 
-export function Plans({ period, refreshToken = 0, onNavigate, ready = true }: { period: Period; refreshToken?: number; onNavigate?: (section: Section, pane?: SettingsPane) => void; ready?: boolean }) {
+export function Plans({ refreshToken = 0 }: { period: Period; refreshToken?: number; onNavigate?: (section: Section, pane?: SettingsPane) => void; ready?: boolean }) {
   // Force a fresh fetch (bypassing QuotaService's 5-min cache, and its keychain
   // guard) when the user hits ⌘R or clicks Refresh in the Connect affordance;
   // the steady 30s poll keeps serving cached quota.
@@ -178,11 +124,6 @@ export function Plans({ period, refreshToken = 0, onNavigate, ready = true }: { 
     return codeburn.getQuota(force, disabledProviders)
   }, [refreshToken, reconnectNonce, quotaMemoKey], { memoKey: quotaMemoKey })
   const reconnect = () => setReconnectNonce(value => value + 1)
-  const budgetReport = usePolled<StatusJson>(() => codeburn.getPlans(period), [period, refreshToken], {
-    enabled: ready,
-    memoKey: reportMemoKey('plans', period),
-  })
-  const manualPlans = budgetReport.data ? manualPlanSummaries(budgetReport.data) : []
   const stableQuota = useStableQuota(quota.data)
 
   return (
@@ -190,15 +131,9 @@ export function Plans({ period, refreshToken = 0, onNavigate, ready = true }: { 
       <div className="bar">
         <BarNav />
         <h1 className="t">{t('plans.title')}</h1>
-        <div className="sp" />
-        <button type="button" className="btn btn-s" onClick={() => onNavigate?.('settings', 'plans')}>
-          {t('plans.addPlan')}
-        </button>
       </div>
       <div className={motionClass('body', 'section-fade')}>
-        {budgetReport.data && budgetReport.error && <StaleBanner error={budgetReport.error} />}
         {renderQuota(stableQuota, quota.error, reconnect)}
-        {renderBudgetPlans(budgetReport.data, budgetReport.error, manualPlans)}
       </div>
     </>
   )
@@ -237,27 +172,6 @@ function renderQuota(data: QuotaProvider[] | null, error: ReturnType<typeof useP
 function CardEmboss({ provider }: { provider: string }) {
   if (!hasProviderLogo(provider)) return null
   return <div className="plan-card-art" aria-hidden><ProviderLogo provider={provider} size={132} /></div>
-}
-
-function renderBudgetPlans(data: StatusJson | null, error: ReturnType<typeof usePolled<StatusJson>>['error'], plans: JsonPlanSummary[]) {
-  if (!data && error) {
-    return (
-      <section className="budget-plans">
-        <h2 className="plans-section-heading">{t('plans.budget.heading')}</h2>
-        <CliErrorPanel error={error} subject={t('plans.budget.pacingSubject')} />
-      </section>
-    )
-  }
-  if (plans.length === 0) return null
-
-  return (
-    <section className="budget-plans">
-      <h2 className="plans-section-heading">{t('plans.budget.heading')}</h2>
-      <div className="plans-grid">
-        {plans.map(plan => <PlanPanel key={`${plan.provider}-${plan.id}`} plan={plan} />)}
-      </div>
-    </section>
-  )
 }
 
 function QuotaPanel({ quota, onReconnect }: { quota: QuotaProvider; onReconnect: () => void }) {
@@ -348,65 +262,4 @@ function QuotaMeter({ window }: { window: QuotaWindow }) {
       </div>
     </div>
   )
-}
-
-// Preset plans are flat subscriptions: usage past the price is API value
-// received, not a bill. Only a custom plan is a cap the user set.
-function isSubscription(plan: JsonPlanSummary): boolean {
-  return plan.id !== 'custom'
-}
-
-function PlanPanel({ plan }: { plan: JsonPlanSummary }) {
-  const hasBudget = plan.budget > 0
-  const displayPercent = Math.min(100, Math.max(0, plan.percentUsed))
-  const over = plan.status === 'over' || plan.percentUsed > 100
-  const trackClass = hasBudget ? (over && !isSubscription(plan) ? 'over' : undefined) : 'mut'
-  const overage = Math.max(0, plan.spent - plan.budget)
-  const right = hasBudget
-    ? overage > 0
-      ? isSubscription(plan)
-        ? t('plans.card.spentValueMultiple', { spent: formatConverted(plan.spent), multiple: (plan.percentUsed / 100).toLocaleString(localeTag(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })
-        : t('plans.card.spentPercentOver', { spent: formatConverted(plan.spent), percent: fmtPct(plan.percentUsed), overage: formatConverted(overage) })
-      : t('plans.card.spentPercent', { spent: formatConverted(plan.spent), percent: fmtPct(plan.percentUsed) })
-    : t('plans.card.spentThisCycle', { spent: formatConverted(plan.spent) })
-  const detail = hasBudget
-    ? t('plans.card.budgetDetail', { budget: formatConverted(plan.budget), provider: plan.provider })
-    : t('plans.card.noPlanDetail', { provider: plan.provider })
-
-  return (
-    <Panel
-      className="plan-card"
-      title={<span className="plan-title">{PLAN_NAMES[plan.id]}<small>{detail}</small></span>}
-      right={right}
-    >
-      <CardEmboss provider={plan.provider} />
-      <div className="track" data-testid={`plan-track-${plan.provider}`}>
-        <i className={trackClass} style={{ width: `${displayPercent}%` }} />
-      </div>
-      {hasBudget ? <PaceLine plan={plan} /> : null}
-    </Panel>
-  )
-}
-
-function PaceLine({ plan }: { plan: JsonPlanSummary }) {
-  const end = cycleEndDate(plan)
-  const endLabel = end ? formatShortDate(end) : t('plans.date.unknown')
-  if (isSubscription(plan) && (plan.status !== 'under' || plan.projectedMonthEnd > plan.budget)) {
-    return <div className="pace">{t('plans.pace.value', { projected: formatConverted(plan.projectedMonthEnd), date: endLabel })}</div>
-  }
-  if (plan.status === 'over' || plan.projectedMonthEnd > plan.budget) {
-    return (
-      <div className="pace hot">
-        {t('plans.pace.exceed', { projected: formatConverted(plan.projectedMonthEnd), date: endLabel })}
-      </div>
-    )
-  }
-  if (plan.status === 'near') {
-    return (
-      <div className="pace hot">
-        {t('plans.pace.near', { percent: fmtPct(plan.percentUsed), projected: formatConverted(plan.projectedMonthEnd), date: endLabel })}
-      </div>
-    )
-  }
-  return <div className="pace ok">{t('plans.pace.onTrack')}</div>
 }

@@ -10,8 +10,7 @@ struct ActivitySection: View {
             isExpanded: $isExpanded,
             trailing: {
                 HStack(spacing: 8) {
-                    Text(L("Cost")).frame(minWidth: 54, alignment: .trailing)
-                    Text(L("Turns")).frame(minWidth: 52, alignment: .trailing)
+                    Text(L("Turns")).frame(minWidth: 54, alignment: .trailing)
                     Text(L("1-shot")).frame(minWidth: 44, alignment: .trailing)
                 }
                 .font(.system(size: 10, weight: .medium))
@@ -20,9 +19,9 @@ struct ActivitySection: View {
             }
         ) {
             VStack(alignment: .leading, spacing: 7) {
-                let maxCost = max(store.payload.current.topActivities.map(\.cost).max() ?? 1, 0.01)
-                ForEach(store.payload.current.topActivities, id: \.name) { activity in
-                    ActivityRow(activity: activity, maxCost: maxCost)
+                let maxTurns = max(store.payload.current.topActivities.map(\.turns).max() ?? 1, 1)
+                ForEach(store.payload.current.topActivities.sorted { $0.turns > $1.turns }, id: \.name) { activity in
+                    ActivityRow(activity: activity, maxTurns: maxTurns)
                 }
             }
         }
@@ -31,27 +30,22 @@ struct ActivitySection: View {
 
 struct ActivityRow: View {
     let activity: ActivityEntry
-    let maxCost: Double
+    let maxTurns: Int
 
     var body: some View {
         HStack(spacing: 8) {
-            FixedBar(fraction: activity.cost / maxCost)
+            FixedBar(fraction: Double(activity.turns) / Double(maxTurns))
                 .frame(width: 56, height: 6)
 
             Text(activity.name)
                 .font(.system(size: 12.5, weight: .medium))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(activity.cost.asCompactCurrency())
-                .font(.codeMono(size: 12, weight: .medium))
-                .tracking(-0.2)
-                .frame(minWidth: 54, alignment: .trailing)
-
             Text("\(activity.turns)")
                 .font(.system(size: 11))
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
-                .frame(minWidth: 52, alignment: .trailing)
+                .frame(minWidth: 54, alignment: .trailing)
 
             Text(oneShotText)
                 .font(.system(size: 10.5))

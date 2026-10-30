@@ -12,8 +12,7 @@ import { UpdateBanner } from './components/UpdateBanner'
 import { rangeLabel, TopBar } from './components/TopBar'
 import { Window } from './components/Window'
 import { clearPolledMemo, hasPolledMemo, pausePolledPersistence, polledMemoTimestamp, primePolledMemo, usePolled, usePolledInFlight } from './hooks/usePolled'
-import { readDailyBudget } from './lib/budget'
-import { formatCompact, formatUsd, setActiveCurrency, shortenProjectPath } from './lib/format'
+import { shortenProjectPath } from './lib/format'
 import {
   EMPTY_FILTERS,
   filtersActive,
@@ -44,8 +43,7 @@ import { generationAt } from './lib/generation'
 import { detectedProviders as detectedProviderList, providerLabel, readDisabledProviders, type DetectedProvider } from './lib/providers'
 import { reportMemoKey } from './lib/reportMemoKey'
 import { persistRefreshValue, readRefreshValue, resolveCadenceMs, useOnBattery, RefreshCadenceContext, type RefreshCadence } from './lib/refreshCadence'
-import { OverviewContent, type InvestigateRequest } from './sections/Overview'
-import { OptimizeContent } from './sections/Optimize'
+import { type InvestigateRequest } from './sections/Overview'
 import { Models } from './sections/Models'
 import { INITIAL_VISIBLE, Sessions, type SessionSort } from './sections/Sessions'
 import { PullRequestsContent } from './sections/PullRequests'
@@ -53,8 +51,8 @@ import { Compare } from './sections/Compare'
 import { PeriodCompare } from './sections/PeriodCompare'
 import { Plans } from './sections/Plans'
 import { Settings, type SettingsPane } from './sections/Settings'
-import { SpendContent } from './sections/Spend'
 import { PluginsSection } from './sections/Plugins'
+import { MonthlyUsageApp } from './MonthlyUsageApp'
 import type { DateRange, MenubarPayload, ModelReportRow, Period, Scope } from './lib/types'
 import { Icon } from './components/icons'
 import { IdeScopePicker } from './components/IdeScopePicker'
@@ -148,8 +146,6 @@ function sectionTitles(): Record<Section, string> {
     overview: t('shell.nav.overview'),
     sessions: t('shell.nav.sessions'),
     pullRequests: t('shell.nav.pullRequests'),
-    spend: t('shell.nav.spend'),
-    optimize: t('shell.nav.optimize'),
     models: t('shell.nav.models'),
     compare: t('shell.nav.compare'),
     periods: t('shell.nav.periods'),
@@ -186,14 +182,9 @@ export function selectedReportMemoKeys(
 ): string[] {
   if (section === 'overview' || section === 'pullRequests') return [activeOverviewKey]
   if (section === 'sessions') return [reportMemoKey('sessions', period, provider, range)]
-  if (section === 'spend') return [activeOverviewKey, reportMemoKey('spendflow', period, provider, range)]
-  if (section === 'optimize') return [
-    activeOverviewKey,
-    reportMemoKey('optimize', period, provider, range),
-    reportMemoKey('yield', period, provider, range),
-  ]
   if (section === 'models') return [reportMemoKey('models', period, provider, range, 'false')]
   if (section === 'compare') return [reportMemoKey('comparemodels', period, provider, range)]
+  if (section === 'periods') return [reportMemoKey('periodcompare-v2', 'week', provider, null)]
   if (section === 'plans') return [
     `quota|${[...disabledProviders].sort().join(',')}`,
     reportMemoKey('plans', period),
@@ -336,7 +327,7 @@ function LocaleProvider({ children }: { children: ReactNode }) {
   return <LocaleContext.Provider value={value}><Fragment key={locale}>{children}</Fragment></LocaleContext.Provider>
 }
 
-const NAV_SECTIONS = new Set<string>(['overview', 'sessions', 'pullRequests', 'spend', 'optimize', 'models', 'compare', 'plans', 'settings', 'plugins'])
+const NAV_SECTIONS = new Set<string>(['overview', 'sessions', 'pullRequests', 'models', 'compare', 'periods', 'plans', 'settings', 'plugins'])
 
 /** Boot position: the best-effort restart snapshot when it is still valid
  *  (section and period re-validated; a stale drawer revalidates itself once
@@ -346,7 +337,7 @@ function initialNavState(): NavState {
   if (restored
     && NAV_SECTIONS.has(restored.section)
     && isPeriod(restored.period)) {
-    return { ...restored, range: restored.range ?? null, filters: restored.filters ?? EMPTY_FILTERS }
+    return { ...restored, range: restored.range ?? null, filters: restored.filters ?? EMPTY_FILTERS, sort: restored.sort === 'cost' ? 'recent' : restored.sort }
   }
   return {
     section: 'overview',
@@ -355,7 +346,7 @@ function initialNavState(): NavState {
     range: null,
     filters: EMPTY_FILTERS,
     sessionId: null,
-    sort: 'cost',
+    sort: 'recent',
     visibleCount: INITIAL_VISIBLE,
   }
 }
@@ -401,7 +392,6 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
     }, 15_000)
     return () => window.clearInterval(id)
   }, [])
-  const [, setCurrencyTick] = useState(0)
   const [snapshotRevision, setSnapshotRevision] = useState(0)
   const configGenerationRef = useRef(0)
 
@@ -493,12 +483,6 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
     if (!overview.data || overview.dataKey !== activeOverviewKey || customRange || scope !== 'local' || transientProject) return
     writeOverviewHeadline(activeOverviewKey, overview.data, overview.lastSuccessAt ?? Date.now())
   }, [activeOverviewKey, customRange, overview.data, overview.dataKey, overview.lastSuccessAt, scope, transientProject])
-
-  useEffect(() => {
-    if (overview.data || !headlineSnapshot?.currency) return
-    setActiveCurrency(headlineSnapshot.currency)
-    setCurrencyTick(tick => tick + 1)
-  }, [headlineSnapshot?.currency, overview.data])
 
   // Boot readiness: the overview poll is the single cold-cache warmer (long
   // timeout + progress). Other sections gate their first CLI spawn on this so a
@@ -606,19 +590,6 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
     () => visibleProviderEntries.filter(entry => !entry.idle).map(entry => entry.id).join('\u0000'),
     [visibleProviderEntries])
 
-  useEffect(() => {
-    const currency = overview.data?.currency
-    if (!currency) return
-    // While `switching`, `data` is a memo-served payload from a previous key that
-    // may carry a STALE currency (cached before a Settings currency change): never
-    // let it regress the display. Apply currency only from a freshly-resolved
-    // fetch; the fresh result (switching false) re-runs this and applies the real
-    // one. clearPolledMemo() on a currency mutation also purges those stale entries.
-    if (overview.switching) return
-    setActiveCurrency(currency)
-    setCurrencyTick(tick => tick + 1)
-  }, [overview.data?.currency?.code, overview.data?.currency?.rate, overview.data?.currency?.symbol, overview.switching])
-
   // Prefetch for millisecond switches: once the first overview has resolved,
   // quietly warm the SELECTED period's first-click reports for the active
   // provider, then that same period for the other detected providers. Only the
@@ -681,24 +652,12 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
           load: () => codeburn.getSessions(targetPeriod, provider, undefined, true),
         },
         {
-          key: reportMemoKey('spendflow', targetPeriod, provider),
-          load: () => codeburn.getSpendFlow(targetPeriod, provider, undefined, true),
-        },
-        {
           key: reportMemoKey('models', targetPeriod, provider, null, 'false'),
           load: () => codeburn.getModels(targetPeriod, provider, false, undefined, true),
         },
         {
           key: reportMemoKey('comparemodels', targetPeriod, provider),
           load: () => codeburn.getCompareModels(targetPeriod, provider, true),
-        },
-        {
-          key: reportMemoKey('optimize', targetPeriod, provider),
-          load: () => codeburn.getOptimizeReport(targetPeriod, provider, undefined, true),
-        },
-        {
-          key: reportMemoKey('yield', targetPeriod, provider),
-          load: () => codeburn.getYield(targetPeriod, provider, undefined, true),
         },
         {
           key: reportMemoKey('plans', targetPeriod),
@@ -765,12 +724,8 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
     setRefreshToken(token => token + 1)
   }, [refreshOverview])
 
-  // A Settings action changed config that alters computed costs/currency
-  // (currency/alias/plan/price-override). The electron read-cache is flushed CLI-
-  // side, but the renderer's instant-switch memo still holds payloads computed
-  // under the OLD config — a later provider switch would repaint the stale currency.
-  // Purge the memo, then force-refresh the active view so the new values land in a
-  // couple seconds (quick like the menubar) instead of at the next poll.
+  // A Settings action changed a report input. Clear renderer and overview caches,
+  // then force-refresh the active view so the updated configuration appears now.
   const onConfigMutated = useCallback(() => {
     configGenerationRef.current++
     warmedKeys.current.clear()
@@ -795,10 +750,6 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
     trackEvent('section_view', { section: next })
   }, [commitNav])
 
-  /** Compare periods' contribution drill-down: the same Sessions destination
-   *  every other drill-through lands on, scoped to the clicked side's range
-   *  and filtered to the contribution's own key. Not a union: the range moves,
-   *  so any previous selection no longer describes this population. */
   const inspectContribution = useCallback((range: DateRange, dimension: 'project' | 'model', key: string) => {
     commitNav({
       section: 'sessions',
@@ -841,12 +792,10 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
       if (key === '1') navigate('overview')
       else if (key === '2') navigate('sessions')
       else if (key === '3') navigate('pullRequests')
-      else if (key === '4') navigate('spend')
-      else if (key === '5') navigate('optimize')
       else if (key === '6') navigate('models')
       else if (key === '7') navigate('compare')
-      else if (key === '9') navigate('periods')
       else if (key === '8') navigate('plans')
+      else if (key === '9') navigate('periods')
       else if (key === ',') navigate('settings')
       else if (key === 'r') refreshVisible()
       else return
@@ -984,14 +933,13 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
 
   return (
     <Window>
-      <Sidebar active={section} onNavigate={navigate} status={<StatusLine polled={overview} snapshot={headlineSnapshot} />} />
+      <Sidebar active={section} onNavigate={navigate} />
       <ToastHost />
       <Splash hasData={overview.data != null || headlineSnapshot != null} hasError={overview.error != null && !overviewCold} />
       <div className="ct" aria-busy={refreshing}>
         <div className={refreshing ? 'switch-line on' : 'switch-line'} aria-hidden="true" />
         <UpdateBanner />
         <IndexingBanner payload={overview.degraded ?? overview.data ?? null} />
-        <DailyBudgetBanner payload={overview.data ?? null} provider={provider} />
         <ErrorBoundary key={section}>
         {section === 'plans' ? (
           <Plans period={period} refreshToken={refreshToken} onNavigate={navigate} ready={ready} />
@@ -1000,6 +948,11 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
         ) : section === 'plugins' ? (
           <PluginsSection onNavigate={navigate} />
         ) : (
+          section === 'overview' ? (
+            <div key={transientProject?.path ?? ''} className={motionClass('body', 'section-fade')}>
+              <MonthlyUsageApp />
+            </div>
+          ) : (
           <>
             <TopBar
               title={sectionTitles()[section]}
@@ -1025,9 +978,7 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
             />
             {/* A project switch remounts the section, so no panel keeps the last project's rows. */}
             <div key={transientProject?.path ?? ''} className={motionClass('body', 'section-fade')}>
-              {section === 'overview' ? (
-                <OverviewContent period={period} provider={provider} range={customRange} overview={overview} onNavigate={navigate} onInvestigate={investigate} ready={ready} scope={scope} configSource={claudeConfigSource} refreshToken={refreshToken} headlineSnapshot={headlineSnapshot} />
-              ) : section === 'sessions' ? (
+              {section === 'sessions' ? (
                 // A new sort or a changed selection reorders the whole list, so
                 // the pagination depth resets IN THE SAME commit — one history
                 // entry, and the depth a Back/Forward restores stays whatever it
@@ -1035,10 +986,6 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
                 <Sessions period={period} provider={provider} range={customRange} refreshToken={refreshToken} detectedProviders={visibleProviderEntries} onProviderChange={onProviderSelect} ready={ready} filters={filters} onFiltersChange={next => commitNav({ filters: next, visibleCount: INITIAL_VISIBLE })} openSessionId={openSessionId} onSessionOpen={key => commitNav({ sessionId: key })} onSessionClose={() => commitNav({ sessionId: null })} sort={nav.sort as SessionSort} onSortChange={value => commitNav({ sort: value, visibleCount: INITIAL_VISIBLE })} visibleCount={nav.visibleCount} onVisibleCountChange={value => commitNav({ visibleCount: value })} />
               ) : section === 'pullRequests' ? (
                 <PullRequestsContent overview={overview} period={period} provider={provider} range={customRange} onInvestigate={investigate} />
-              ) : section === 'spend' ? (
-                <SpendContent period={period} provider={provider} range={customRange} overview={overview} refreshToken={refreshToken} ready={ready} onInvestigate={investigate} />
-              ) : section === 'optimize' ? (
-                <OptimizeContent period={period} provider={provider} range={customRange} overview={overview} refreshToken={refreshToken} ready={ready} configSource={claudeConfigSource} scope={scope} />
               ) : section === 'models' ? (
                 <Models period={period} provider={provider} range={customRange} refreshToken={refreshToken} onNavigate={navigate} onInvestigate={investigate} ready={ready} />
               ) : section === 'compare' ? (
@@ -1050,6 +997,7 @@ function AppMain({ transientProject, onTransientProject }: { transientProject: T
               )}
             </div>
           </>
+          )
         )}
         </ErrorBoundary>
         {section !== 'settings' && (
@@ -1095,20 +1043,6 @@ function RefreshMark({ refreshing, label }: { refreshing: boolean; label: string
   )
 }
 
-function StatusLine({ polled, snapshot }: { polled: ReturnType<typeof usePolled<MenubarPayload>>; snapshot?: ReturnType<typeof readOverviewHeadline> }) {
-  if (polled.data) {
-    return (
-      <>
-        {polled.data.current.label} <b>{formatUsd(polled.data.current.cost)}</b>
-      </>
-    )
-  }
-  if (snapshot) return <>{snapshot.label} <b>{formatUsd(snapshot.cost)}</b> · {t('shell.status.updating')}</>
-  if (polled.error?.kind === 'not-found') return <>{t('shell.status.cliNotFound')}</>
-  if (polled.loading) return <>{t('shell.status.scanning')}</>
-  return <>—</>
-}
-
 function SectionPlaceholder({ title }: { title: string }) {
   return (
     <Panel title={title}>
@@ -1134,51 +1068,6 @@ function IndexingBanner({ payload }: { payload: MenubarPayload | null }) {
   return (
     <div role="status" className="stale-banner">
       {t('shell.indexing.progress', { indexed: Math.min(hydration.indexedFiles, hydration.totalFiles), total: hydration.totalFiles })}
-    </div>
-  )
-}
-
-/** App-wide daily-budget alert: reads today's usage from the overview payload and
- * warns at >=80% / alerts at >=100% of the configured cap. Dismissible per day. */
-function DailyBudgetBanner({ payload, provider }: { payload: MenubarPayload | null; provider: string }) {
-  const [, bumpDismiss] = useState(0)
-  const budget = readDailyBudget()
-  if (!budget || !payload) return null
-
-  // Token totals in history.daily are zeroed under a specific-provider filter
-  // (only cost is per-provider), so a token cap can only be evaluated honestly on
-  // the all-providers view; otherwise we'd compare usage against a false zero.
-  if (budget.kind === 'tokens' && provider !== 'all') return null
-
-  const todayKey = localDateKey(new Date())
-  let dismissed: string | null = null
-  try { dismissed = globalThis.localStorage?.getItem('codeburn.dailyBudget.dismissed') ?? null } catch { /* storage can be unavailable */ }
-  if (dismissed === todayKey) return null
-
-  // Today's entry may be absent when there has been no activity yet: that's 0 used.
-  const entry = payload.history.daily.find(day => day.date === todayKey)
-  const used = budget.kind === 'usd'
-    ? entry?.cost ?? 0
-    : entry ? entry.inputTokens + entry.outputTokens : 0
-  const percent = (used / budget.value) * 100
-  if (percent < 80) return null
-
-  const exceeded = percent >= 100
-  const spent = budget.kind === 'usd' ? formatUsd(used) : formatCompact(used)
-  const cap = budget.kind === 'usd' ? formatUsd(budget.value) : formatCompact(budget.value)
-  const text = exceeded
-    ? t('shell.budget.exceeded', { spent, cap })
-    : t('shell.budget.warning', { percent: Math.floor(percent) })
-
-  const dismiss = () => {
-    try { globalThis.localStorage?.setItem('codeburn.dailyBudget.dismissed', todayKey) } catch { /* storage can be unavailable */ }
-    bumpDismiss(tick => tick + 1)
-  }
-
-  return (
-    <div role="status" className={exceeded ? 'budget-banner exceeded' : 'budget-banner'}>
-      <span>{text}</span>
-      <button type="button" className="set-text-button" onClick={dismiss}>{t('shell.action.dismiss')}</button>
     </div>
   )
 }

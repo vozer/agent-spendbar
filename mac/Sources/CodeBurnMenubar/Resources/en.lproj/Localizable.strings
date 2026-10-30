@@ -717,3 +717,5 @@
 "Monthly usage" = "Monthly usage";
 "Percent of monthly budget used. A tilde marks estimated or partial data." = "Percent of monthly budget used. A tilde marks estimated or partial data.";
 "How often the app refreshes local provider usage. Auto refreshes every 30 seconds while you're plugged in and backs off on battery." = "How often the app refreshes local provider usage. Auto refreshes every 30 seconds while you're plugged in and backs off on battery.";
+"Avg/session" = "Avg/session";
+"Other models · %1$@ calls · %2$@ tokens" = "Other models · %1$@ calls · %2$@ tokens";

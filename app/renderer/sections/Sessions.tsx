@@ -11,8 +11,7 @@ import { SessionDrawer } from '../components/SessionDrawer'
 import { StaleBanner } from '../components/StaleBanner'
 import { Icon } from '../components/icons'
 import { usePolled } from '../hooks/usePolled'
-import { formatCompact, formatCount, formatDayShort, formatUsd, isEstimatedCost, shortenProjectPath } from '../lib/format'
-import { Usd, tokensOf } from '../components/Usd'
+import { formatCompact, formatCount, formatDayShort, shortenProjectPath } from '../lib/format'
 import { codeburn } from '../lib/ipc'
 import {
   applyInvestigation,
@@ -23,14 +22,13 @@ import {
   type InvestigationFilters,
 } from '../lib/investigation'
 import { reportMemoKey } from '../lib/reportMemoKey'
-import { hasSessionView, SessionView } from './SessionView'
 import type { DateRange, Period, SessionDrillRow, SessionRow } from '../lib/types'
 import { t } from '../i18n'
 
 export const INITIAL_VISIBLE = 120
 const STEP = 120
 
-export type SessionSort = 'cost' | 'recent' | 'turns' | 'tokens'
+export type SessionSort = 'recent' | 'turns' | 'tokens'
 
 /** Composite identity of a session row: provider + project + sessionId. An id
  *  alone is not globally unique (another provider, or an imported transcript,
@@ -67,21 +65,13 @@ function rowTokens(row: SessionRow): number {
   return row.inputTokens + row.outputTokens
 }
 
-/** Under a selection the Cost column (and the sort) mean the row's
- *  CONTRIBUTION to the selection; otherwise the plain row cost. */
-function entryCost(entry: IncludedRow, filtered: boolean): number {
-  return filtered ? entry.cost : entry.row.cost
-}
-
-function compareEntries(sort: SessionSort, filtered: boolean, a: IncludedRow, b: IncludedRow): number {
-  if (sort === 'cost') return entryCost(b, filtered) - entryCost(a, filtered)
+function compareEntries(sort: SessionSort, a: IncludedRow, b: IncludedRow): number {
   if (sort === 'turns') return b.row.turns - a.row.turns
   if (sort === 'tokens') return rowTokens(b.row) - rowTokens(a.row)
   return endedAtTime(b.row) - endedAtTime(a.row)
 }
 
-function groupSortValue(sort: SessionSort, filtered: boolean, entries: IncludedRow[]): number {
-  if (sort === 'cost') return entries.reduce((sum, entry) => sum + entryCost(entry, filtered), 0)
+function groupSortValue(sort: SessionSort, entries: IncludedRow[]): number {
   if (sort === 'turns') return entries.reduce((sum, entry) => sum + entry.row.turns, 0)
   if (sort === 'tokens') return entries.reduce((sum, entry) => sum + rowTokens(entry.row), 0)
   return entries.reduce((latest, entry) => Math.max(latest, endedAtTime(entry.row)), 0)
@@ -164,7 +154,7 @@ export function Sessions({
   visibleCount?: number
   onVisibleCountChange?: (count: number) => void
 }) {
-  const [internalSort, setInternalSort] = useState<SessionSort>('cost')
+  const [internalSort, setInternalSort] = useState<SessionSort>('recent')
   const sort = controlledSort ?? internalSort
   const setSort = (value: SessionSort) => {
     setInternalSort(value)
@@ -237,33 +227,19 @@ export function Sessions({
     ].some(value => value.toLowerCase().includes(q)))
   }, [selection, q])
 
-  // "Your usual" for the drawer's lead sentence: the median over the rows the
-  // list is actually showing. Under five rows a median is noise, so the drawer
-  // drops the comparison instead.
-  const medianCost = useMemo(() => {
-    if (searched.length < 5) return undefined
-    const sorted = searched.map(({ row }) => row.cost).sort((left, right) => left - right)
-    const mid = sorted.length >> 1
-    return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
-  }, [searched])
-
   const summary = useMemo(() => {
     if (investigating) {
       return {
         included: searched,
-        cost: searched.reduce((sum, entry) => sum + entry.cost, 0),
         calls: searched.reduce((sum, entry) => sum + entry.calls, 0),
         tokens: searched.reduce((sum, entry) => sum + entry.tokens, 0),
-        fullCost: searched.reduce((sum, entry) => sum + entry.row.cost, 0),
         unattributable: selection.unattributable,
       }
     }
     return {
       included: searched,
-      cost: searched.reduce((sum, entry) => sum + entry.row.cost, 0),
-      calls: 0,
+      calls: searched.reduce((sum, entry) => sum + entry.row.calls, 0),
       tokens: searched.reduce((sum, entry) => sum + rowTokens(entry.row), 0),
-      fullCost: 0,
       unattributable: 0,
     }
   }, [investigating, searched, selection.unattributable])
@@ -285,7 +261,7 @@ export function Sessions({
     const entries = included
     if (!grouped) {
       return [...entries]
-        .sort((a, b) => compareEntries(sort, investigating, a, b))
+        .sort((a, b) => compareEntries(sort, a, b))
         .map(entry => ({ type: 'row' as const, entry }))
     }
 
@@ -299,20 +275,21 @@ export function Sessions({
     return [...byProvider.entries()]
       .map(([groupProvider, providerRows]) => ({
         provider: groupProvider,
-        rows: [...providerRows].sort((a, b) => compareEntries(sort, investigating, a, b)),
-        cost: providerRows.reduce((sum, entry) => sum + entryCost(entry, investigating), 0),
-        sortValue: groupSortValue(sort, investigating, providerRows),
+        rows: [...providerRows].sort((a, b) => compareEntries(sort, a, b)),
+        calls: providerRows.reduce((sum, entry) => sum + (investigating ? entry.calls : entry.row.calls), 0),
+        tokens: providerRows.reduce((sum, entry) => sum + (investigating ? entry.tokens : rowTokens(entry.row)), 0),
+        sortValue: groupSortValue(sort, providerRows),
       }))
       .sort((a, b) => b.sortValue - a.sortValue || a.provider.localeCompare(b.provider))
       .flatMap(group => [
-        { type: 'header' as const, provider: group.provider, count: group.rows.length, cost: group.cost },
+        { type: 'header' as const, provider: group.provider, count: group.rows.length, calls: group.calls, tokens: group.tokens },
         ...group.rows.map(entry => ({ type: 'row' as const, entry })),
       ])
   }, [included, grouped, sort, investigating])
 
   const renderedSequence: Array<SequenceEntry> = []
   let renderedRows = 0
-  let pendingHeader: { type: 'header'; provider: string; count: number; cost: number } | null = null
+  let pendingHeader: { type: 'header'; provider: string; count: number; calls: number; tokens: number } | null = null
   for (const entry of sequence) {
     if (entry.type === 'header') {
       pendingHeader = entry
@@ -367,15 +344,10 @@ export function Sessions({
     )
   }
 
-  const selectionCost = summary.cost
   const remaining = included.length - renderedRows
   const openRow = effectiveOpenSessionId ? rowForKey(rows, effectiveOpenSessionId) ?? null : null
   const subagentCount = included.reduce((sum, entry) => sum + (entry.row.subagents?.length ?? 0), 0)
   const subagentSuffix = subagentCount > 0 ? <> {t(`sessions.summary.subagents.${subagentCount === 1 ? 'one' : 'other'}`, { count: subagentCount.toLocaleString('en-US') })}</> : null
-
-  if (openRow && hasSessionView(openRow)) {
-    return <SessionView key={sessionRowKey(openRow)} row={openRow} filters={filters} medianCost={medianCost} onBack={closeDrawer} />
-  }
 
   return (
     <div className="sessions-list-view">
@@ -392,7 +364,6 @@ export function Sessions({
         />
         <SegTabs
           options={[
-            { value: 'cost', label: t('sessions.sort.cost') },
             { value: 'recent', label: t('sessions.sort.recent') },
             { value: 'turns', label: t('sessions.sort.turns') },
             { value: 'tokens', label: t('sessions.sort.tokens') },
@@ -413,9 +384,7 @@ export function Sessions({
         {investigating
           ? (
               <>
-                {formatCount(included.length, 'session')}{subagentSuffix} {t('sessions.summary.inSelection')} · <strong>{formatUsd(selectionCost)}</strong> {t('sessions.summary.inSelection')}
-                {summary.fullCost > selectionCost + 1e-9 && <> · {t('sessions.summary.fullCostOfSessions')} {formatUsd(summary.fullCost)}</>}
-                {summary.tokens > 0 && <> · {formatCompact(summary.tokens)} {t('sessions.summary.tokensInSelection')}</>}
+                {formatCount(included.length, 'session')}{subagentSuffix} {t('sessions.summary.inSelection')} · {formatCount(summary.calls, 'call')} · {formatCompact(summary.tokens)} {t('sessions.summary.tokensInSelection')}
                 {summary.unattributable > 0 && (
                   <span className="sessions-unattributed"> · {formatCount(summary.unattributable, 'session')} {t('sessions.summary.unattributedSuffix')}</span>
                 )}
@@ -423,7 +392,7 @@ export function Sessions({
             )
           : (
               <>
-                {formatCount(included.length, 'session')}{subagentSuffix} · {formatUsd(selectionCost)} · {formatCompact(summary.tokens)} {t('sessions.summary.tokens')}
+                {formatCount(included.length, 'session')}{subagentSuffix} · {formatCount(summary.calls, 'call')} · {formatCompact(summary.tokens)} {t('sessions.summary.tokens')}
               </>
             )}
       </div>
@@ -450,8 +419,8 @@ export function Sessions({
               {renderedSequence.map(entry => entry.type === 'header' ? (
                 <div className="provider-h" key={`provider-${entry.provider}`}>
                   <span className="provider-h-name"><ProviderLogo provider={entry.provider} size={13} />{providerName(entry.provider, detectedProviders)}</span>
-                  <span className="provider-count">{formatCount(entry.count, 'session')}</span>
-                  <span className="provider-cost">{formatUsd(entry.cost)}</span>
+                  <span className="provider-count">{formatCount(entry.count, 'session')} · {formatCount(entry.calls, 'call')}</span>
+                  <span className="provider-tokens">{formatCompact(entry.tokens)}</span>
                 </div>
               ) : (
                 <Fragment key={sessionRowKey(entry.entry.row)}>
@@ -478,16 +447,6 @@ export function Sessions({
                     <span className="session-when">{formatDayShort(entry.entry.row.endedAt)}</span>
                     <span className="session-models">{entry.entry.row.models.join(', ')}</span>
                     <span>{entry.entry.row.turns}</span>
-                    {investigating ? (
-                      <span className="session-cost-split">
-                        <strong>{formatUsd(entry.entry.cost)}</strong>
-                        {entry.entry.cost < entry.entry.row.cost - 1e-9 && (
-                          <small title={t('sessions.list.fullCostTooltip')}> {t('sessions.list.ofConnector')} <Usd value={entry.entry.row.cost} tokens={tokensOf(entry.entry.row)} nested estimated={isEstimatedCost(entry.entry.row.cost, entry.entry.row.estimatedCost)} /></small>
-                        )}
-                      </span>
-                    ) : (
-                      <span><Usd value={entry.entry.row.cost} tokens={tokensOf(entry.entry.row)} nested estimated={isEstimatedCost(entry.entry.row.cost, entry.entry.row.estimatedCost)} /></span>
-                    )}
                     <span>{formatCompact(rowTokens(entry.entry.row))}</span>
                   </button>
                 </Fragment>
@@ -509,7 +468,6 @@ export function Sessions({
           row={openRow}
           openKey={sessionRowKey(openRow)}
           filters={filters}
-          medianCost={medianCost}
           onClose={closeDrawer}
         />
       )}
@@ -518,5 +476,5 @@ export function Sessions({
 }
 
 type SequenceEntry =
-  | { type: 'header'; provider: string; count: number; cost: number }
+  | { type: 'header'; provider: string; count: number; calls: number; tokens: number }
   | { type: 'row'; entry: IncludedRow }

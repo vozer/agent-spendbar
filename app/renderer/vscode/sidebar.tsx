@@ -4,9 +4,9 @@ import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { setCurrentLocale, resolveSystemLocale, t } from '../i18n'
-import { asOfLabel, formatCount, formatUsd, setActiveCurrency } from '../lib/format'
+import { asOfLabel } from '../lib/format'
 import type { HostMessage } from './channels'
-import { money, quotaText, type Figure, type SidebarState, type Summary } from './summary'
+import { quotaText, rankedText, usageText, type Figure, type SidebarState, type Summary } from './summary'
 import './sidebar.css'
 
 setCurrentLocale(resolveSystemLocale(boot.locale))
@@ -36,7 +36,7 @@ function Row({ label, figure }: { label: string; figure: Figure | null }) {
   return (
     <div className="cbs-row">
       <span className="cbs-label">{label}</span>
-      <span className="cbs-value" title={figure?.estimated ? t('shared.usd.estimated') : undefined}>{figure ? money(figure) : '—'}</span>
+      <span className="cbs-value">{figure ? usageText(figure) : '—'}</span>
     </div>
   )
 }
@@ -50,14 +50,14 @@ function Section({ title, children, id }: { title: string; children: React.React
   )
 }
 
-function Ranked({ rows }: { rows: Summary['topModels'] }) {
+function Ranked({ rows }: { rows: Summary['topModels'] | Summary['topProjects'] }) {
   if (rows.length === 0) return <p className="cbs-empty">{t('ide.sidebar.empty')}</p>
   return (
     <ol className="cbs-list">
       {rows.map(row => (
         <li key={row.name} className="cbs-row">
           <span className="cbs-label cbs-ellipsis" title={row.name}>{row.name}</span>
-          <span className="cbs-value">{money(row)}</span>
+          <span className="cbs-value">{rankedText(row)}</span>
         </li>
       ))}
     </ol>
@@ -88,7 +88,6 @@ function Quota({ summary }: { summary: Summary }) {
 function SidebarApp() {
   const state = useSidebarState()
   const summary = state.summary
-  if (summary) setActiveCurrency(summary.currency)
   const busy = state.status === 'loading'
   return (
     <main className="cbs" aria-busy={busy}>
@@ -118,18 +117,6 @@ function SidebarApp() {
           <Section id="cbs-projects" title={t('ide.sidebar.topProjects')}><Ranked rows={summary.topProjects} /></Section>
           <Section id="cbs-models" title={t('ide.sidebar.topModels')}><Ranked rows={summary.topModels} /></Section>
           <Section id="cbs-plans" title={t('shell.nav.plans')}><Quota summary={summary} /></Section>
-          <Section id="cbs-optimize" title={t('shell.nav.optimize')}>
-            <div className="cbs-row">
-              <span className="cbs-label">
-                {summary.optimize && summary.optimize.findingCount > 0
-                  ? `${formatCount(summary.optimize.findingCount, 'finding')} · ${t('ide.sidebar.savings', { amount: formatUsd(summary.optimize.savingsUSD) })}`
-                  : summary.optimize ? t('ide.sidebar.noFindings') : '—'}
-              </span>
-              {summary.optimize && summary.optimize.findingCount > 0 && (
-                <button type="button" className="cbs-link" onClick={() => act('openSection', 'optimize')}>{t('ide.sidebar.review')}</button>
-              )}
-            </div>
-          </Section>
         </>
       )}
       <footer className="cbs-foot">

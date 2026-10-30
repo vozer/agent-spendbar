@@ -27,7 +27,7 @@ export const models: SectionCatalog = {
 
     'models.audit.estimatedTitle': 'Cost is estimated (no live pricing or derived rate)',
     'models.audit.estimatedSuffix': ' est',
-    'models.audit.unloggedNote': 'Claude Code bills some calls it does not write to its transcripts: some advisor calls, and subagent replies that keep only part of their usage. For those, CodeBurn can show less than Claude Code\'s own cost counter.',
+    'models.audit.unloggedNote': 'Claude Code does not write every call to its transcripts. Advisor calls and some subagent replies may be missing, so recorded token totals can be lower than the provider reports.',
 
     'models.addAlias': 'add alias ›',
     'models.viewSessionsFor': 'View sessions for {name}',
@@ -69,7 +69,7 @@ export const models: SectionCatalog = {
 
     'models.audit.estimatedTitle': "Le coût est estimé (aucune tarification en direct ou taux dérivé)",
     'models.audit.estimatedSuffix': ' est.',
-    'models.audit.unloggedNote': "Claude Code facture certains appels qu'il n'écrit pas dans ses transcriptions : certains appels au conseiller, et des réponses de sous-agents qui ne gardent qu'une partie de leur usage. Pour ceux-là, CodeBurn peut afficher moins que le compteur de coût de Claude Code.",
+    'models.audit.unloggedNote': "Claude Code n'écrit pas tous les appels dans ses transcriptions. Certains appels de conseil et certaines réponses de sous-agents peuvent manquer. Les totaux de jetons enregistrés peuvent donc être inférieurs aux chiffres du fournisseur.",
 
     'models.addAlias': 'ajouter un alias ›',
     'models.viewSessionsFor': 'Voir les sessions pour {name}',
@@ -111,7 +111,7 @@ export const models: SectionCatalog = {
 
     'models.audit.estimatedTitle': 'コストは推定値です(有効な価格設定または算出レートがありません)',
     'models.audit.estimatedSuffix': ' 推定',
-    'models.audit.unloggedNote': 'Claude Code は、トランスクリプトに書き込まない呼び出しにも課金します。一部のアドバイザー呼び出しや、使用量の一部しか残らないサブエージェントの応答です。これらについて、CodeBurn は Claude Code 自身のコスト表示より少なく表示することがあります。',
+    'models.audit.unloggedNote': 'Claude Code はすべての呼び出しをトランスクリプトに記録するわけではありません。一部のアドバイザー呼び出しやサブエージェントの応答が欠けるため、記録されたトークン数はプロバイダーの報告より少なくなる場合があります。',
 
     'models.addAlias': 'エイリアスを追加 ›',
     'models.viewSessionsFor': '{name}のセッションを表示',
@@ -153,7 +153,7 @@ export const models: SectionCatalog = {
 
     'models.audit.estimatedTitle': '비용은 추정치입니다(실시간 가격 정보나 산출된 요율이 없음)',
     'models.audit.estimatedSuffix': ' 추정',
-    'models.audit.unloggedNote': 'Claude Code는 트랜스크립트에 기록하지 않는 일부 호출에도 비용을 청구합니다. 일부 어드바이저 호출과, 사용량의 일부만 남는 서브에이전트 응답입니다. 이런 경우 CodeBurn은 Claude Code 자체 비용 카운터보다 적게 표시할 수 있습니다.',
+    'models.audit.unloggedNote': 'Claude Code는 모든 호출을 트랜스크립트에 기록하지 않습니다. 일부 어드바이저 호출과 서브에이전트 응답이 누락될 수 있어 기록된 토큰 수가 제공업체 보고보다 적을 수 있습니다.',
 
     'models.addAlias': '별칭 추가 ›',
     'models.viewSessionsFor': '{name}의 세션 보기',
@@ -195,7 +195,7 @@ export const models: SectionCatalog = {
 
     'models.audit.estimatedTitle': '成本为估算值(没有实时定价或推算费率)',
     'models.audit.estimatedSuffix': ' 估算',
-    'models.audit.unloggedNote': 'Claude Code 会对一些未写入其对话记录的调用计费：部分顾问调用，以及只保留部分用量的子代理回复。对于这些调用，CodeBurn 显示的金额可能低于 Claude Code 自己的费用计数。',
+    'models.audit.unloggedNote': 'Claude Code 不会将所有调用写入对话记录。部分顾问调用和子代理回复可能缺失，因此记录的令牌总数可能低于提供商报告。',
 
     'models.addAlias': '添加别名 ›',
     'models.viewSessionsFor': '查看 {name} 的会话',
@@ -237,7 +237,7 @@ export const models: SectionCatalog = {
 
     'models.audit.estimatedTitle': '成本為估算值(沒有即時定價或推算費率)',
     'models.audit.estimatedSuffix': ' 估算',
-    'models.audit.unloggedNote': 'Claude Code 會對一些未寫入其對話紀錄的呼叫計費：部分顧問呼叫，以及只保留部分用量的子代理回覆。對於這些呼叫，CodeBurn 顯示的金額可能低於 Claude Code 自己的費用計數。',
+    'models.audit.unloggedNote': 'Claude Code 不會將所有呼叫寫入對話紀錄。部分顧問呼叫和子代理回覆可能缺漏，因此記錄的權杖總數可能低於供應商報告。',
 
     'models.addAlias': '新增別名 ›',
     'models.viewSessionsFor': '查看 {name} 的工作階段',

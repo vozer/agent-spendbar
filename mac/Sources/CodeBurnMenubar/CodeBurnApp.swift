@@ -145,7 +145,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         // activity so a fetch is never napped mid-flight, and any user
         // interaction (popover open, wake) refreshes immediately.
 
-        restorePersistedCurrency()
         // Start the resident CLI early without an artificial query. The first
         // real status refresh becomes its only cold warm-up. See ServeConnection.
         Task { await ServeConnection.shared.ensureStarted() }
@@ -626,28 +625,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         async let spendbar = store.refreshSpendbarBudget(force: force, qualityOfService: qualityOfService)
         let (visibleSucceeded, menubarSucceeded, todaySucceeded, _) = await (visible, menubar, today, spendbar)
         return visibleSucceeded && menubarSucceeded && todaySucceeded
-    }
-
-    /// Loads the currency code persisted by `codeburn currency` so a relaunch picks up where
-    /// the user left off. Rate is resolved from the on-disk FX cache if present, otherwise
-    /// fetched live in the background.
-    private func restorePersistedCurrency() {
-        guard let code = CLICurrencyConfig.loadCode(), code != "USD" else { return }
-        let symbol = CurrencyState.symbolForCode(code)
-        store.currency = code
-
-        Task {
-            let cached = await FXRateCache.shared.cachedRate(for: code)
-            await MainActor.run {
-                CurrencyState.shared.apply(code: code, rate: cached, symbol: symbol)
-            }
-            let fresh = await FXRateCache.shared.rate(for: code)
-            if let fresh, fresh != cached {
-                await MainActor.run {
-                    CurrencyState.shared.apply(code: code, rate: fresh, symbol: symbol)
-                }
-            }
-        }
     }
 
     fileprivate var lastSubscriptionRefreshAt: Date?
@@ -1437,10 +1414,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
     /// after being shown once during the first load (6 percent idle CPU until
     /// relaunch). Rebuilding a 360pt view on open is far cheaper than that.
     private func makePopoverContent() -> NSViewController {
-        let content = MonthlyUsagePopover(
-            items: monthlyBudgetItems(),
-            monthLabel: store.spendbarBudgetPayload?.current.label ?? "Calendar month to date"
+        let monthFormatter = DateFormatter()
+        monthFormatter.setLocalizedDateFormatFromTemplate("LLLL yyyy")
+        let content = MenuBarContent(
+            monthlyUsageItems: monthlyBudgetItems(),
+            monthLabel: monthFormatter.string(from: Date())
         )
+            .environment(store)
+            .environment(updateChecker)
+            .frame(width: popoverWidth)
 
         let hosting = NSHostingController(rootView: content)
         // Let the popover size itself from preferredContentSize only. With the

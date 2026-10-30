@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
-import { MonthlyUsageApp } from './MonthlyUsageApp'
+import { App } from './App'
 import { installPageHiddenClass } from './lib/pageVisibility'
 import { clearHeadlinesOnUpgrade } from './lib/overviewSnapshot'
 import { version } from '../package.json'
@@ -31,6 +31,6 @@ document.documentElement.dataset.platform =
 
 createRoot(root).render(
   <StrictMode>
-    <MonthlyUsageApp />
+    <App />
   </StrictMode>,
 )

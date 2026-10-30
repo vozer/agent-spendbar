@@ -8,7 +8,7 @@ import { TruncTip } from '../components/TruncTip'
 import { SectionSkeleton } from '../components/Skeleton'
 import { StaleBanner } from '../components/StaleBanner'
 import { type Polled, usePolled } from '../hooks/usePolled'
-import { formatCount, formatDayShort, formatDuration, formatUsd } from '../lib/format'
+import { formatCount, formatDayShort, formatDuration } from '../lib/format'
 import { codeburn } from '../lib/ipc'
 import { PERIOD_LABELS } from '../lib/period'
 import type { CliError, DateRange, MenubarPayload, Period } from '../lib/types'
@@ -43,16 +43,11 @@ function prFacts(pr: PrRow): string[] {
   else if (pr.oneShot !== undefined) facts.push(t('pullRequests.facts.notTracked'))
   const reviews = pr.reviewRuns
   const only = reviews?.length === 1 ? reviews[0]! : null
-  if (only?.kind === 'you') facts.push(t('pullRequests.facts.reviewedByYou', { amount: formatUsd(only.costUSD) }))
-  else if (only?.model) facts.push(t('pullRequests.facts.reviewedBy', { model: only.model, amount: formatUsd(only.costUSD) }))
-  else if (reviews?.length) facts.push(t(`pullRequests.facts.reviewRuns.${reviews.length === 1 ? 'one' : 'other'}`, { count: reviews.length, amount: formatUsd(pr.reviewCostUSD ?? 0) }))
+  if (only?.kind === 'you') facts.push(t('pullRequests.facts.reviewedByYou'))
+  else if (only?.model) facts.push(t('pullRequests.facts.reviewedBy', { model: only.model }))
+  else if (reviews?.length) facts.push(t('pullRequests.facts.reviewRuns', { count: formatCount(reviews.length, 'review run') }))
   else if (reviews) facts.push(t('pullRequests.facts.noReview'))
   return facts
-}
-
-function carriedNote(pr: PrRow): string | null {
-  const carried = pr.carriedUSD ?? 0
-  return carried > 0 && carried >= Math.max(0.5, pr.cost * 0.2) ? t('pullRequests.facts.carried', { amount: formatUsd(carried) }) : null
 }
 
 function timeLabel(iso: string): string {
@@ -68,25 +63,6 @@ function timeline(pr: PrRow): Array<{ label: string; at: string; note?: string }
   pr.followUpAt?.forEach((at, i) => events.push({ label: t('pullRequests.timeline.round', { count: i + 1 }), at }))
   if (pr.mergedAt) events.push({ label: t('pullRequests.timeline.merged'), at: pr.mergedAt, ...(pr.timeToMergeMs != null ? { note: t('pullRequests.timeline.afterOpen', { duration: formatDuration(pr.timeToMergeMs) }) } : {}) })
   return events.sort((a, b) => a.at.localeCompare(b.at))
-}
-
-const share = (cost: number, total: number): string => `${total > 0 ? Math.round(cost / total * 100) : 0}%`
-
-// Label, amount and share of the PR's cost, in the app's plain table style.
-function CostTable({ rows, total }: { rows: Array<{ key: string; label: string; cost: number }>; total: number }) {
-  return (
-    <table className="pr-table">
-      <tbody>
-        {rows.map(row => (
-          <tr key={row.key}>
-            <TruncTip as="td" text={row.label} />
-            <td>{formatUsd(row.cost)}</td>
-            <td className="pr-share">{share(row.cost, total)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  )
 }
 
 function ModelChips({ models }: { models: string[] }) {
@@ -202,33 +178,23 @@ function PrEmptyNote({ period, provider, range }: { period: Period; provider: st
 }
 
 function PrTable({ pullRequests, onInvestigate }: { pullRequests: PullRequests; onInvestigate?: (request: InvestigateRequest) => void }) {
-  const { rows, distinctCost, distinctSessions, subagentSessions, attributedCost, unattributedCost } = pullRequests
+  const { rows, distinctSessions, subagentSessions } = pullRequests
+  const sortedRows = [...rows].sort((a, b) => b.calls - a.calls || b.sessions - a.sessions || a.label.localeCompare(b.label))
   const [expandedUrl, setExpandedUrl] = useState<string | null>(null)
   // Reset any open expansion when the PR set changes (a period/provider switch or
   // a refresh that alters the list): a stale expandedUrl would otherwise linger
   // pointing at a row that is no longer present.
-  const rowKey = rows.map(row => row.url).join('|')
+  const rowKey = sortedRows.map(row => row.url).join('|')
   useEffect(() => { setExpandedUrl(null) }, [rowKey])
-
-  // A new-attribution payload carries `attributedCost`; an older by-reference
-  // payload omits it, so the rows are not summable and the footer must differ.
-  const summable = attributedCost !== undefined
-  const unattributed = unattributedCost ?? 0
-  // Reconcile to the visible numbers: every PR is present, so the summary is
-  // exactly the sum of the rounded cards a person can inspect below.
-  const displayedAttributed = rows.reduce((sum, row) => sum + Number(row.cost.toFixed(2)), 0)
+  const linkedCalls = sortedRows.reduce((sum, row) => sum + row.calls, 0)
 
   return (
     <div className="pr-page">
       <Panel title={t('pullRequests.summary.title')}>
         <div className="pr-summary" aria-label={t('pullRequests.summary.aria')}>
           <div className="pr-summary-item">
-            <span>{t('pullRequests.summary.attributedSpend')}</span>
-            <TruncTip as="strong" text={formatUsd(summable ? displayedAttributed : distinctCost)} />
-          </div>
-          <div className="pr-summary-item">
             <span>{t('pullRequests.summary.pullRequests')}</span>
-            <TruncTip as="strong" text={rows.length.toLocaleString('en-US')} />
+            <TruncTip as="strong" text={sortedRows.length.toLocaleString('en-US')} />
           </div>
           <div className="pr-summary-item">
             <span>{t('pullRequests.summary.linkedSessions')}</span>
@@ -238,14 +204,18 @@ function PrTable({ pullRequests, onInvestigate }: { pullRequests: PullRequests; 
             <span>{t('pullRequests.summary.foldedAgentRuns')}</span>
             <TruncTip as="strong" text={(subagentSessions ?? 0).toLocaleString('en-US')} />
           </div>
+          <div className="pr-summary-item">
+            <span>{t('pullRequests.summary.calls')}</span>
+            <TruncTip as="strong" text={linkedCalls.toLocaleString('en-US')} />
+          </div>
         </div>
       </Panel>
       <Panel
         title={t('pullRequests.list.title')}
-        right={<>{t('pullRequests.list.sortedHint')} <span className="pr-list-count">{t('pullRequests.list.total', { count: rows.length.toLocaleString('en-US') })}</span></>}
+        right={<>{t('pullRequests.list.sortedHint')} <span className="pr-list-count">{t('pullRequests.list.total', { count: sortedRows.length.toLocaleString('en-US') })}</span></>}
       >
           <div className="pr-list" aria-label={t('pullRequests.list.aria')}>
-          {rows.map(pr => (
+          {sortedRows.map(pr => (
             <PrRowView
               key={pr.url}
               pr={pr}
@@ -255,20 +225,7 @@ function PrTable({ pullRequests, onInvestigate }: { pullRequests: PullRequests; 
             />
           ))}
         </div>
-        {summable ? (
-          <p className="pr-footnote">
-            {t('pullRequests.footnote.turnByTurn')}
-            {subagentSessions ? t(`pullRequests.footnote.subagentIncluded.${subagentSessions === 1 ? 'one' : 'other'}`, { count: subagentSessions.toLocaleString('en-US') }) : ''}
-          </p>
-        ) : (
-          <p className="pr-footnote">
-            {t('pullRequests.footnote.byReference.summary', { amount: formatUsd(distinctCost), sessionCount: formatCount(distinctSessions, 'distinct session') })}
-            {' '}{t('pullRequests.footnote.byReference.detail')}
-          </p>
-        )}
-        {unattributed > 0 && (
-          <p className="pr-unattributed">{t('pullRequests.unattributed', { amount: formatUsd(unattributed) })}</p>
-        )}
+        <p className="pr-footnote">{t('pullRequests.footnote.usage')}</p>
       </Panel>
     </div>
   )
@@ -276,9 +233,7 @@ function PrTable({ pullRequests, onInvestigate }: { pullRequests: PullRequests; 
 
 function PrRowView({ pr, expanded, onToggle, onInvestigate }: { pr: PrRow; expanded: boolean; onToggle: () => void; onInvestigate?: (request: InvestigateRequest) => void }) {
   const models = pr.models ?? []
-  const categories = pr.categories ?? []
   const facts = prFacts(pr)
-  const carried = carriedNote(pr)
 
   return (
     <article className={expanded ? 'pr-card is-open' : 'pr-card'}>
@@ -301,10 +256,9 @@ function PrRowView({ pr, expanded, onToggle, onInvestigate }: { pr: PrRow; expan
               <span>{pr.runs !== undefined ? formatCount(pr.runs, 'run') : formatCount(pr.sessions, 'session')}</span>
               <span>{formatCount(pr.calls, 'call')}</span>
             </div>
-            {(facts.length > 0 || carried || pr.linkEvidence === 'pr-link-only') && (
+            {(facts.length > 0 || pr.linkEvidence === 'pr-link-only') && (
               <div className="pr-card-meta pr-card-facts">
                 {facts.map(fact => <span key={fact}>{fact}</span>)}
-                {carried && <span title={t('pullRequests.facts.carriedTitle')}>{carried}</span>}
                 {pr.linkEvidence === 'pr-link-only' && <span title={t('pullRequests.facts.prLinkOnlyTitle')}>{t('pullRequests.facts.prLinkOnly')}</span>}
               </div>
             )}
@@ -314,28 +268,16 @@ function PrRowView({ pr, expanded, onToggle, onInvestigate }: { pr: PrRow; expan
           <span className="pr-card-label">{t('pullRequests.card.modelsLabel')}</span>
           <ModelChips models={models} />
         </div>
-        <div className="pr-card-cost">
-          <span className="pr-card-label">{t('pullRequests.card.spendLabel')}</span>
-          <strong {...(pr.approx ? { title: t('pullRequests.card.approxTitle') } : {})}>{pr.approx ? '~' : ''}{formatUsd(pr.cost)}</strong>
-        </div>
         <span className="pr-chevron" aria-hidden="true"><Icon name="chevron-right" /></span>
       </div>
-      {expanded && <PrDetail pr={pr} categories={categories} onInvestigate={onInvestigate} />}
+      {expanded && <PrDetail pr={pr} onInvestigate={onInvestigate} />}
     </article>
   )
 }
 
-function PrDetail({ pr, categories, onInvestigate }: { pr: PrRow; categories: NonNullable<PrRow['categories']>; onInvestigate?: (request: InvestigateRequest) => void }) {
+function PrDetail({ pr, onInvestigate }: { pr: PrRow; onInvestigate?: (request: InvestigateRequest) => void }) {
   const events = timeline(pr)
-  const carried = carriedNote(pr)
   const runs = pr.runList ?? []
-  const split = pr.costSplit
-  const top = categories.slice(0, 5)
-  const rest = categories.slice(5).reduce((sum, cat) => sum + cat.cost, 0)
-  const work = [
-    ...top.map(cat => ({ key: cat.name, label: cat.name, cost: cat.cost })),
-    ...(rest > 0 ? [{ key: 'other', label: t('pullRequests.work.other'), cost: rest }] : []),
-  ]
   return (
     <div className="pr-detail-cell">
       <div className="pr-detail-grid">
@@ -360,7 +302,6 @@ function PrDetail({ pr, categories, onInvestigate }: { pr: PrRow; categories: No
           <div className="pr-detail" role="region" aria-label={t('pullRequests.runs.aria', { label: pr.label })}>
             <div className="pr-detail-head">
               <span>{t('pullRequests.runs.title')}</span>
-              {carried && <strong>{carried}</strong>}
             </div>
             <table className="pr-table pr-runs">
               <tbody>
@@ -369,33 +310,16 @@ function PrDetail({ pr, categories, onInvestigate }: { pr: PrRow; categories: No
                     <TruncTip as="td" text={run.description ?? t(run.kind === 'session' ? 'pullRequests.runs.mainSession' : 'pullRequests.runs.agentRun')} />
                     <td className="pr-run-why">{t(`pullRequests.runs.link.${run.link}`)}</td>
                     <td>{run.model ?? ''}</td>
-                    <td>{formatUsd(run.costUSD)}</td>
+                    <td>{timeLabel(run.at)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-        {split && (
-          <div className="pr-detail" role="region" aria-label={t('pullRequests.split.aria', { label: pr.label })}>
-            <div className="pr-detail-head"><span>{t('pullRequests.split.title')}</span></div>
-            <CostTable total={pr.cost} rows={[
-              { key: 'build', label: t('pullRequests.split.build'), cost: Math.max(0, split.buildUSD) },
-              { key: 'review', label: t('pullRequests.split.review'), cost: split.reviewUSD },
-              { key: 'after', label: t('pullRequests.split.after'), cost: split.fixesUSD },
-            ]} />
-          </div>
-        )}
-        <div className="pr-detail" role="region" aria-label={t('pullRequests.card.costBreakdownAria', { label: pr.label })}>
-          <div className="pr-detail-head">
-            <span>{t('pullRequests.card.workBreakdownTitle')}</span>
-            <strong>{t('pullRequests.card.workBreakdownTotal', { amount: formatUsd(pr.cost) })}</strong>
-          </div>
-          {work.length > 0 ? <CostTable rows={work} total={pr.cost} /> : <p className="pr-cat-empty">{t('pullRequests.card.noPerTurnDetail')}</p>}
-        </div>
       </div>
       {/* Drill-through entry: a control of its own, never the row. The row
-          is a toggle, so hanging the investigation off it would cost the
+          is a toggle, so hanging the investigation off it would close the
           expansion; this opens the sessions that composed the PR while the
           row stays exactly as the reader left it. The PR URL is the
           aggregation key of the by-PR report, so it selects at the

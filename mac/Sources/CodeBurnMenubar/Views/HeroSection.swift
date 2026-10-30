@@ -23,50 +23,18 @@ struct HeroSection: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    if store.displayMetric == .tokens {
-                        HStack(spacing: 2) {
-                            Image(systemName: "arrow.up")
-                                .font(.system(size: 9, weight: .semibold))
-                            Text(formatTokens(Double(totals.outputTokens)))
-                        }
+                    Text(totals.calls == 1 ? L("%@ call", totals.calls.asThousandsSeparated()) : L("%@ calls", totals.calls.asThousandsSeparated()))
                         .font(.system(size: 11))
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
-                        HStack(spacing: 2) {
-                            Image(systemName: "arrow.down")
-                                .font(.system(size: 9, weight: .semibold))
-                            Text(formatTokens(Double(totals.inputTokens)))
-                        }
+                    Text(combinedUsage != nil
+                         ? SessionCountLabel.combinedText
+                         : SessionCountLabel.text(sessions: totals.sessions, basis: totals.sessionCountBasis))
                         .font(.system(size: 10.5))
                         .monospacedDigit()
                         .foregroundStyle(.tertiary)
-                    } else {
-                        Text(totals.calls == 1 ? L("%@ call", totals.calls.asThousandsSeparated()) : L("%@ calls", totals.calls.asThousandsSeparated()))
-                            .font(.system(size: 11))
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                        Text(combinedUsage != nil
-                             ? SessionCountLabel.combinedText
-                             : SessionCountLabel.text(sessions: totals.sessions, basis: totals.sessionCountBasis))
-                            .font(.system(size: 10.5))
-                            .monospacedDigit()
-                            .foregroundStyle(.tertiary)
-                            .help(SessionCountLabel.helpText(combined: combinedUsage != nil, basis: totals.sessionCountBasis))
-                    }
+                        .help(SessionCountLabel.helpText(combined: combinedUsage != nil, basis: totals.sessionCountBasis))
                 }
-            }
-
-            if !store.isDayMode,
-               store.selectedPeriod == .today,
-               store.shouldShowDailyBudgetWarning {
-                HStack(spacing: 4) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 10))
-                    Text(L("Daily budget of %@ exceeded", store.dailyBudgetLabel))
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .foregroundStyle(.orange)
-                .padding(.top, 2)
             }
 
             if let usage = combinedUsage {
@@ -81,15 +49,6 @@ struct HeroSection: View {
                 .foregroundStyle(.secondary)
             }
 
-            if let savingsCaption {
-                HStack(spacing: 4) {
-                    Image(systemName: "leaf.fill")
-                        .font(.system(size: 10))
-                    Text(savingsCaption)
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .foregroundStyle(.green)
-            }
         }
         .padding(.horizontal, 14)
         .padding(.top, 10)
@@ -97,18 +56,12 @@ struct HeroSection: View {
     }
 
     private var heroText: String {
-        if store.displayMetric == .tokens || store.displayMetric == .totalTokens {
-            let total = Double(totals.totalTokens)
-            if total >= 1_000_000_000 { return String(format: "%.2fB tok", total / 1_000_000_000) }
-            if total >= 1_000_000 { return String(format: "%.1fM tok", total / 1_000_000) }
-            if total >= 1_000 { return String(format: "%.0fK tok", total / 1_000) }
-            return String(format: "%.0f tok", total)
+        if totals.totalTokens > 0 {
+            return L("%@ tokens", formatTokens(Double(totals.totalTokens)))
         }
-        let shown = totals.cost.asCurrency()
-        // The combined aggregate carries no estimated split, so it is never marked.
-        guard combinedUsage == nil else { return shown }
-        let estimated = store.payload.current.providerDetails.reduce(0.0) { $0 + ($1.estimatedCostUSD ?? 0) }
-        return (isEstimatedCost(totals.cost, estimated, shown: shown) ? "~" : "") + shown
+        return totals.calls == 1
+            ? L("%@ call", totals.calls.asThousandsSeparated())
+            : L("%@ calls", totals.calls.asThousandsSeparated())
     }
 
     private var combinedUsage: CombinedUsage? {
@@ -136,18 +89,6 @@ struct HeroSection: View {
             return "\(label) · \(todayDate)"
         }
         return label
-    }
-
-    /// Local-model savings caption shown beneath the hero amount when the
-    /// user has mapped any local model to a paid baseline via
-    /// `codeburn model-savings`. Kept as a separate line so actual spend
-    /// (above) and hypothetical avoided spend (below) never get summed
-    /// into a misleading "real cost" by the reader.
-    private var savingsCaption: String? {
-        guard combinedUsage == nil else { return nil }
-        let savings = store.payload.current.localModelSavings.totalUSD
-        guard savings > 0 else { return nil }
-        return L("Saved %@ with local models", savings.asCurrency())
     }
 
     private var todayDate: String {
@@ -232,14 +173,20 @@ private struct CombinedDeviceBreakdown: View {
                             .lineLimit(1)
                             .truncationMode(.tail)
                         Spacer(minLength: 6)
-                        Text(device.error == nil ? device.cost.asCurrency() : L("Unavailable"))
-                            .font(.system(size: 10.5))
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                        Text(formatTokens(Double(device.totalTokens)))
-                            .font(.system(size: 10))
-                            .monospacedDigit()
-                            .foregroundStyle(.tertiary)
+                        if device.error == nil {
+                            Text(L("%@ calls", device.calls.asThousandsSeparated()))
+                                .font(.system(size: 10.5))
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                            Text(L("%@ tokens", formatTokens(Double(device.totalTokens))))
+                                .font(.system(size: 10))
+                                .monospacedDigit()
+                                .foregroundStyle(.tertiary)
+                        } else {
+                            Text(L("Unavailable"))
+                                .font(.system(size: 10.5))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }

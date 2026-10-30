@@ -1,6 +1,6 @@
 # Agent Spendbar Desktop
 
-Electron shell for Agent Spendbar's monthly usage view. The Electron and VS Code surfaces show monthly usage percentages for Codex, Claude Code, and Cursor.
+Electron shell for Agent Spendbar. The Electron and VS Code surfaces keep CodeBurn's usage analytics and show monthly percentages for Codex, Claude Code, and Cursor.
 
 ## Development
 
@@ -28,11 +28,11 @@ This follows the menubar pattern:
 - Missing CLI, bad JSON, timeout, and nonzero exits are surfaced as honest UI states.
 - The renderer never imports CodeBurn engine code from `src/`; the data contract is spawn CLI, decode JSON, poll.
 
-## Monthly usage view
+## Usage dashboard
 
-Both renderer entrypoints mount `MonthlyUsageApp`. It requests all providers for the calendar month, refreshes every five minutes, and offers a manual refresh.
+The dashboard keeps sessions, models, plans, plugins, pull request activity, and token and call details. It shows no currency amounts. Local cost data stays in the CLI payload for monthly percentage calculations.
 
-Each provider has a percentage and progress bar. A tilde marks estimated or partial data. Budget details and calculation limits are in the repository README.
+The monthly overview requests all providers for the calendar month. It refreshes every five minutes and offers a manual refresh. A tilde marks estimated or partial data.
 
 ## Packaging
 

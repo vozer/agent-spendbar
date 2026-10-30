@@ -12,8 +12,7 @@ import type { Section } from '../components/Sidebar'
 import { clearPolledMemo, usePolled } from '../hooks/usePolled'
 import { updateDownloadUrl, useUpdateStatus } from '../hooks/useUpdateStatus'
 import { version as appVersion } from '../../package.json'
-import { readDailyBudget } from '../lib/budget'
-import { formatConverted, formatCount, formatUsd, shortenProjectPath } from '../lib/format'
+import { formatCount, shortenProjectPath } from '../lib/format'
 import { codeburn, normalizeCliError } from '../lib/ipc'
 import { t, useLocale, type LocaleChoice } from '../i18n'
 import { projectHidePattern, projectNamedBy, projectPattern, projectVisible } from '../lib/projectMatch'
@@ -29,10 +28,10 @@ import { ToastHost } from '../components/ToastHost'
 import { rateLimitedNote } from './Plans'
 import { SharingPane } from './SettingsSharing'
 import { CapacityDockPane, MenuBarPane } from './SettingsTray'
-import type { ActionResult, AliasRow, ClaudeConfigSelector, CompanionStatus, CliError, CombinedUsage, CursorSyncStatus, DeviceScanResult, Identity, JsonPlanSummary, MenubarPayload, Period, PlanId, PlanProvider, PriceOverrideList, PriceOverrideRow, PriceRates, ProjectFilter, ProjectRow, ProjectsReport, ProviderName, QuotaProvider, Scope, ShareStatus, StatusJson, TelemetryStatus } from '../lib/types'
+import type { ActionResult, AliasRow, ClaudeConfigSelector, CompanionStatus, CliError, CombinedUsage, CursorSyncStatus, DeviceScanResult, Identity, MenubarPayload, Period, ProjectFilter, ProjectRow, ProjectsReport, ProviderName, QuotaProvider, Scope, ShareStatus, TelemetryStatus } from '../lib/types'
 import { Icon } from '../components/icons'
 
-export type SettingsPane = 'general' | 'providers' | 'projects' | 'aliases' | 'pricing' | 'plans' | 'devices' | 'export' | 'privacy' | 'sharing' | 'menubar'
+export type SettingsPane = 'general' | 'providers' | 'projects' | 'aliases' | 'plans' | 'devices' | 'export' | 'privacy' | 'sharing' | 'menubar'
 type Pane = SettingsPane
 type Theme = 'system' | 'light' | 'dark'
 
@@ -50,29 +49,6 @@ function languageOptions(): { value: LocaleChoice; label: string }[] {
   ]
 }
 
-type PlanPreset = { id: Exclude<PlanId, 'custom' | 'none'>; label: string; provider: Exclude<PlanProvider, 'all' | 'codex'> }
-
-const PLAN_PRESETS: PlanPreset[] = [
-  { id: 'claude-pro', label: 'Claude Pro', provider: 'claude' },
-  { id: 'claude-max', label: 'Claude Max 20x', provider: 'claude' },
-  { id: 'claude-max-5x', label: 'Claude Max 5x', provider: 'claude' },
-  { id: 'cursor-pro', label: 'Cursor Pro', provider: 'cursor' },
-  { id: 'supergrok', label: 'SuperGrok', provider: 'grok' },
-  { id: 'supergrok-heavy', label: 'SuperGrok Heavy', provider: 'grok' },
-  { id: 'google-ai-pro', label: 'Google AI Pro', provider: 'antigravity' },
-  { id: 'google-ai-ultra-5x', label: 'Google AI Ultra 5x', provider: 'antigravity' },
-  { id: 'google-ai-ultra-20x', label: 'Google AI Ultra 20x', provider: 'antigravity' },
-]
-
-// Claude and Codex subscriptions are detected from the CLI login (see the
-// detected-subscriptions list), so only non-OAuth providers get a manual preset.
-const MANUAL_PLAN_PRESETS = PLAN_PRESETS.filter(preset => preset.provider !== 'claude')
-
-const CURRENCIES = [
-  'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'CAD', 'AUD', 'CHF', 'HKD', 'SGD', 'INR', 'NZD', 'SEK', 'NOK', 'DKK',
-  'KRW', 'BRL', 'MXN', 'ZAR', 'AED', 'SAR', 'TRY', 'PLN', 'THB', 'IDR', 'MYR', 'PHP', 'RUB', 'ILS', 'CZK',
-]
-
 function readSetting(key: string): string | null {
   try { return globalThis.localStorage?.getItem(key) ?? null } catch { return null }
 }
@@ -86,7 +62,6 @@ const RAIL_ITEMS: Array<{ id: Pane; labelKey: string; icon: React.ReactNode }> =
   { id: 'providers', labelKey: 'settings.rail.providers', icon: <Icon name="layout-grid" /> },
   { id: 'projects', labelKey: 'settings.rail.projects', icon: <Icon name="folder" /> },
   { id: 'aliases', labelKey: 'settings.rail.aliases', icon: <Icon name="tag" /> },
-  { id: 'pricing', labelKey: 'settings.rail.pricing', icon: <Icon name="circle-dollar-sign" /> },
   { id: 'plans', labelKey: 'settings.rail.plans', icon: <Icon name="credit-card" /> },
   { id: 'devices', labelKey: 'settings.rail.devices', icon: <Icon name="monitor-smartphone" /> },
   { id: 'export', labelKey: 'settings.rail.export', icon: <Icon name="download" /> },
@@ -180,12 +155,11 @@ export function Settings({ period, refreshToken = 0, onNavigate, initialPane, cl
           ))}
         </nav>
         <main className="set-pane">
-          {pane === 'general' && <GeneralPane period={period} refreshToken={refreshToken} claudeConfigs={claudeConfigs} claudeConfigSource={claudeConfigSource} onConfigMutated={onConfigMutated} scope={scope} onScopeChange={onScopeChange} projectFiltered={projectFiltered} />}
+          {pane === 'general' && <GeneralPane claudeConfigs={claudeConfigs} claudeConfigSource={claudeConfigSource} scope={scope} onScopeChange={onScopeChange} projectFiltered={projectFiltered} />}
           {pane === 'providers' && <ProvidersPane refreshToken={refreshToken} />}
           {pane === 'projects' && <ProjectsPane refreshToken={refreshToken} onConfigMutated={onConfigMutated} />}
           {pane === 'aliases' && <AliasesPane refreshToken={refreshToken} onConfigMutated={onConfigMutated} />}
-          {pane === 'pricing' && <PricingPane refreshToken={refreshToken} onConfigMutated={onConfigMutated} />}
-          {pane === 'plans' && <PlansPane period={period} refreshToken={refreshToken} onNavigate={onNavigate} onConfigMutated={onConfigMutated} />}
+          {pane === 'plans' && <PlansPane refreshToken={refreshToken} onNavigate={onNavigate} />}
           {pane === 'devices' && <DevicesPane period={period} refreshToken={refreshToken} />}
           {pane === 'export' && <ExportPane period={period} refreshToken={refreshToken} />}
           {pane === 'sharing' && <SharingPane />}
@@ -205,11 +179,7 @@ export function Settings({ period, refreshToken = 0, onNavigate, initialPane, cl
   )
 }
 
-function GeneralPane({ period, refreshToken, claudeConfigs, claudeConfigSource, onConfigMutated, scope = 'local', onScopeChange, projectFiltered = false }: { period: Period; refreshToken: number; claudeConfigs?: ClaudeConfigSelector; claudeConfigSource: string | null; onConfigMutated?: () => void; scope?: Scope; onScopeChange?: (scope: string) => void; projectFiltered?: boolean }) {
-  const [currencyNonce, setCurrencyNonce] = useState(0)
-  const plans = usePolled<StatusJson>(() => codeburn.getPlans(period), [period, refreshToken, currencyNonce], {
-    memoKey: reportMemoKey('plans', period),
-  })
+function GeneralPane({ claudeConfigs, claudeConfigSource, scope = 'local', onScopeChange, projectFiltered = false }: { claudeConfigs?: ClaudeConfigSelector; claudeConfigSource: string | null; scope?: Scope; onScopeChange?: (scope: string) => void; projectFiltered?: boolean }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = readSetting('codeburn.theme')
     // No saved choice defaults to light (a fresh install), not to the OS setting; an explicit
@@ -219,9 +189,6 @@ function GeneralPane({ period, refreshToken, claudeConfigs, claudeConfigSource, 
   const [defaultPeriod, setDefaultPeriod] = useState(() => readSetting('codeburn.defaultPeriod') ?? 'today')
   const { choice: languageChoice, setChoice: setLanguageChoice } = useLocale()
   const cadence = useRefreshCadence()
-  const [budgetKind, setBudgetKind] = useState<'off' | 'usd' | 'tokens'>(() => readDailyBudget()?.kind ?? 'off')
-  const [budgetInput, setBudgetInput] = useState(() => { const budget = readDailyBudget(); return budget ? String(budget.value) : '' })
-  const [budgetError, setBudgetError] = useState('')
   const update = useUpdateStatus()
   const version = update?.currentVersion || displayVersion()
   const updateNote = update?.updateAvailable && update.latestVersion
@@ -235,28 +202,11 @@ function GeneralPane({ period, refreshToken, claudeConfigs, claudeConfigSource, 
     else document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
-  // Store on change; a positive finite amount persists, anything else clears the
-  // cap (so the banner turns off) and, when non-empty, flags a validation error.
-  const persistBudget = (kind: 'off' | 'usd' | 'tokens', input: string) => {
-    const trimmed = input.trim()
-    if (kind === 'off' || trimmed === '') { setBudgetError(''); writeSetting('codeburn.dailyBudget', ''); return }
-    const value = Number(trimmed)
-    if (!Number.isFinite(value) || value <= 0) { setBudgetError(t('settings.budget.error')); return }
-    setBudgetError('')
-    writeSetting('codeburn.dailyBudget', JSON.stringify({ kind, value }))
-  }
-
   const chooseTheme = (next: Theme) => {
     setTheme(next)
     writeSetting('codeburn.theme', next)
     trackEvent('settings_change', { setting: 'theme', value: next })
   }
-  const finishCurrency = (result: ActionResult) => {
-    showToast(result.ok ? t('settings.toast.updated') : result.stderr || t('settings.toast.currencyError'), result.ok ? 'ok' : 'error')
-    if (result.ok) { setCurrencyNonce(value => value + 1); onConfigMutated?.() }
-  }
-  const currencies = [...CURRENCIES]
-  if (plans.data?.currency && !currencies.includes(plans.data.currency)) currencies.push(plans.data.currency)
   const hasConfigs = Boolean(claudeConfigs && claudeConfigs.options.length > 0)
   const activeConfigLabel = claudeConfigSource
     ? claudeConfigs?.options.find(option => option.id === claudeConfigSource)?.label ?? claudeConfigSource
@@ -288,15 +238,9 @@ function GeneralPane({ period, refreshToken, claudeConfigs, claudeConfigSource, 
         )}
         <div className="about-sec">
           <div className="about-sec-h">{t('settings.section.display')}</div>
-          <div className="about-row"><label className="tx" htmlFor="settings-currency">{t('settings.currency.label')}</label><span className="r">
-            <button className="set-text-button" onClick={() => { trackEvent('settings_change', { setting: 'currency', value: 'USD' }); void codeburn.resetCurrency().then(finishCurrency).catch(toastRejection(t('settings.toast.currencyError'))) }}>{t('settings.currency.reset')}</button>
-            {plans.data ? <Dropdown id="settings-currency" ariaLabel={t('settings.currency.label')} value={plans.data.currency} options={currencies.map(code => ({ value: code, label: code }))} onChange={value => { trackEvent('settings_change', { setting: 'currency', value }); void codeburn.setCurrency(value).then(finishCurrency).catch(toastRejection(t('settings.toast.currencyError'))) }} width={92} /> : plans.error ? <SettingsErrorText error={plans.error} /> : <span className="set-cap">{t('settings.loading')}</span>}
-          </span></div>
           {!isIdeHost() && <div className="about-row"><label className="tx" htmlFor="settings-period">{t('settings.period.label')}<small>{t('settings.period.hint')}</small></label><span className="r"><Dropdown id="settings-period" ariaLabel={t('settings.period.label')} value={defaultPeriod} options={[{ value: 'today', label: t('settings.period.option.today') }, { value: 'week', label: '7d' }, { value: '30days', label: '30d' }, { value: 'month', label: t('settings.period.option.month') }, { value: 'all', label: t('settings.period.option.all') }]} onChange={value => { setDefaultPeriod(value); writeSetting('codeburn.defaultPeriod', value); trackEvent('settings_change', { setting: 'defaultPeriod', value }) }} width={92} /></span></div>}
           <div className="about-row"><label className="tx" htmlFor="settings-scope">{t('settings.scope.label')}<small>{projectFiltered ? t('settings.scope.hintFiltered') : t('settings.scope.hintDefault')}</small></label><span className="r"><Dropdown id="settings-scope" ariaLabel={t('settings.scope.label')} value={scope} options={projectFiltered ? [{ value: 'local', label: t('settings.scope.option.local') }] : [{ value: 'local', label: t('settings.scope.option.local') }, { value: 'combined', label: t('settings.scope.option.combined') }]} onChange={value => onScopeChange?.(value)} width={110} /></span></div>
           {!isIdeHost() && <div className="about-row"><label className="tx" htmlFor="settings-refresh">{t('settings.refresh.label')}<small>{t('settings.refresh.hint', { key: shortcutLabel('R') })}</small></label><span className="r"><Dropdown id="settings-refresh" ariaLabel={t('settings.refresh.label')} value={cadence.value} options={REFRESH_OPTIONS.map(option => ({ value: option.value, label: option.label }))} onChange={cadence.setValue} width={124} /></span></div>}
-          <div className="about-row"><label className="tx" htmlFor="settings-budget">{t('settings.budget.label')}<small>{t('settings.budget.hint')}</small></label><span className="r"><Dropdown id="settings-budget" ariaLabel={t('settings.budget.label')} value={budgetKind} options={[{ value: 'off', label: t('settings.budget.option.off') }, { value: 'usd', label: t('settings.budget.option.usd') }, { value: 'tokens', label: t('settings.budget.option.tokens') }]} onChange={value => { const kind = value as 'off' | 'usd' | 'tokens'; setBudgetKind(kind); persistBudget(kind, budgetInput) }} width={120} />{budgetKind !== 'off' && <input className="set-input" type="text" inputMode="decimal" aria-label={t('settings.budget.amountAriaLabel')} placeholder={budgetKind === 'usd' ? 'USD' : t('settings.budget.placeholderTokens')} value={budgetInput} onChange={event => { setBudgetInput(event.target.value); persistBudget(budgetKind, event.target.value) }} style={{ width: 90 }} />}</span></div>
-          {budgetError && <p className="set-action-msg error">{budgetError}</p>}
         </div>
         <div className="about-sec set-last-sec">
           <div className="about-sec-h">{t('settings.section.about')}</div>
@@ -315,7 +259,7 @@ function ProvidersPane({ refreshToken }: { refreshToken: number }) {
   const providers = detectedProviders(overview.data?.current)
   return <section className="set-p on">
     <div><h3 className="set-h">{t('settings.providers.heading')}</h3><p className="set-sub">{t('settings.providers.subtitle')}</p></div>
-    {overview.error ? <SettingsErrorText error={overview.error} /> : !overview.data ? <p className="set-cap">{t('settings.providers.loading')}</p> : providers.length === 0 ? <p className="set-cap">{t('settings.providers.empty')}</p> : providers.map(entry => <div className="card" key={entry.id}><div className="set-prov-head"><ProviderLogo provider={entry.id} /><span className="set-prov-name">{entry.label}</span><span className="set-status" title={entry.estimated && !entry.idle ? t('shared.usd.estimated') : undefined}><span className={entry.idle ? 'set-dot' : 'set-dot ok'} />{entry.idle ? t('settings.providers.idle') : t('settings.providers.detected', { cost: `${entry.estimated ? '~' : ''}${formatUsd(entry.cost)}` })}{entry.excludedFromTotal ? <span className="set-cap" title={t('settings.providers.notInTotalHint')}> · {t('settings.providers.notInTotal')}</span> : null}</span></div>{entry.id === 'cursor' && <CursorSyncRow status={overview.data?.cursorSync} />}</div>)}
+    {overview.error ? <SettingsErrorText error={overview.error} /> : !overview.data ? <p className="set-cap">{t('settings.providers.loading')}</p> : providers.length === 0 ? <p className="set-cap">{t('settings.providers.empty')}</p> : providers.map(entry => <div className="card" key={entry.id}><div className="set-prov-head"><ProviderLogo provider={entry.id} /><span className="set-prov-name">{entry.label}</span><span className="set-status"><span className={entry.idle ? 'set-dot' : 'set-dot ok'} />{entry.idle ? t('settings.providers.idle') : t('settings.providers.detected')}</span></div>{entry.id === 'cursor' && <CursorSyncRow status={overview.data?.cursorSync} />}</div>)}
   </section>
 }
 
@@ -341,15 +285,13 @@ function ProjectsPane({ refreshToken, onConfigMutated }: { refreshToken: number;
   })
   const saved = usePolled<ProjectFilter>(() => codeburn.getProjectFilter(), [refreshToken, actionNonce])
   const filter = saved.data ?? NO_PROJECT_FILTER
-  // Costliest first: a lifetime list runs to thousands of rows here, and the
-  // ones worth hiding are the ones with spend on them.
+  // Keep active projects first, while retaining saved filters for inactive rows.
   const projects = useMemo(
-    () => [...(report.data?.projects ?? [])].sort((a, b) => (b.cost ?? 0) - (a.cost ?? 0)),
+    () => [...(report.data?.projects ?? [])].sort((a, b) => b.sessions - a.sessions || a.name.localeCompare(b.name)),
     [report.data],
   )
-  // A row that rounds to $0.00 shows nothing, unless a saved pattern names it:
-  // then it stays, so the switch can undo it.
-  const listed = projects.filter(project => Math.round((project.cost ?? 0) * 100) > 0
+  // Inactive rows stay visible when a saved pattern names them, so the switch can undo it.
+  const listed = projects.filter(project => project.sessions > 0
     || [...filter.project, ...filter.exclude].some(pattern => projectNamedBy(project, pattern)))
   const needle = search.trim().toLowerCase()
   const shown = needle
@@ -408,7 +350,7 @@ function ProjectsPane({ refreshToken, onConfigMutated }: { refreshToken: number;
           const pattern_ = projectPattern(project)
           return <div className="about-row" key={pattern_}>
             <span className="tx set-mono">{project.temporary ? t('shell.project.temporary') : project.checkouts ? project.name : shortenProjectPath(project.path || project.name, 2)}<small>{pattern_}</small></span>
-            <span className="r set-status"><span className="set-cap">{formatConverted(project.cost)} · {formatCount(project.sessions, 'session')}</span></span>
+            <span className="r set-status"><span className="set-cap">{formatCount(project.sessions, 'session')}</span></span>
             <button type="button" role="switch" aria-checked={visible} aria-label={t('settings.projects.showAriaLabel', { pattern: pattern_ })} className={visible ? 'switch on' : 'switch'} disabled={busy} onClick={() => toggle(project, !visible)}><span className="switch-knob" /></button>
           </div>
         })}
@@ -456,77 +398,6 @@ function AliasesPane({ refreshToken, onConfigMutated }: { refreshToken: number; 
 const toastRejection = (fallback: string) => (err: unknown) =>
   showToast(normalizeCliError(err).message || fallback, 'error')
 
-function priceRateSummary(o: PriceOverrideRow): string {
-  const parts = [t('settings.pricing.rateIn', { value: o.inputPerM }), t('settings.pricing.rateOut', { value: o.outputPerM })]
-  if (typeof o.cacheReadPerM === 'number') parts.push(t('settings.pricing.rateRead', { value: o.cacheReadPerM }))
-  if (typeof o.cacheCreationPerM === 'number') parts.push(t('settings.pricing.rateCreate', { value: o.cacheCreationPerM }))
-  return parts.join(' · ')
-}
-
-// '' -> not provided; a positive finite number -> a rate; 'invalid' otherwise.
-function parseRate(raw: string): number | undefined | 'invalid' {
-  const trimmed = raw.trim()
-  if (trimmed === '') return undefined
-  const value = Number(trimmed)
-  if (!Number.isFinite(value) || value <= 0) return 'invalid'
-  return value
-}
-
-function PricingPane({ refreshToken, onConfigMutated }: { refreshToken: number; onConfigMutated?: () => void }) {
-  const [actionNonce, setActionNonce] = useState(0)
-  const overrides = usePolled<PriceOverrideList>(() => codeburn.getPriceOverrides(), [refreshToken, actionNonce])
-  const [model, setModel] = useState('')
-  const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
-  const [cacheRead, setCacheRead] = useState('')
-  const [cacheCreation, setCacheCreation] = useState('')
-  const [error, setError] = useState('')
-
-  const complete = (result: ActionResult, added = false) => {
-    if (!result.ok) { setError(result.stderr || t('settings.pricing.actionFailed')); return }
-    setError('')
-    if (added) { setModel(''); setInput(''); setOutput(''); setCacheRead(''); setCacheCreation('') }
-    setActionNonce(value => value + 1)
-    onConfigMutated?.()
-  }
-
-  const add = () => {
-    const fields: Array<[keyof PriceRates, string]> = [['input', input], ['output', output], ['cacheRead', cacheRead], ['cacheCreation', cacheCreation]]
-    const rates: PriceRates = {}
-    for (const [key, raw] of fields) {
-      const parsed = parseRate(raw)
-      if (parsed === 'invalid') { setError(t('settings.pricing.invalidRate')); return }
-      if (parsed !== undefined) rates[key] = parsed
-    }
-    if (!model.trim()) { setError(t('settings.pricing.modelRequired')); return }
-    if (rates.input === undefined || rates.output === undefined) { setError(t('settings.pricing.ratesRequired')); return }
-    setError('')
-    void codeburn.setPriceOverride(model.trim(), rates).then(result => complete(result, true)).catch(toastRejection(t('settings.pricing.actionFailed')))
-  }
-
-  return <section className="set-p set-p-wide on">
-    <div><h3 className="set-h">{t('settings.pricing.heading')}</h3><p className="set-sub">{t('settings.pricing.subtitle')}</p></div>
-    <div className="card"><div className="about-sec set-last-sec">
-      {overrides.error ? <SettingsErrorText error={overrides.error} /> : !overrides.data ? <p className="set-cap">{t('settings.pricing.loading')}</p> : overrides.data.overrides.length === 0 ? <p className="set-cap set-alias-empty">{t('settings.pricing.empty')}</p> : overrides.data.overrides.map(override => <div className="set-price-row" key={override.model}><span className="set-mono">{override.model}</span><span className="set-price-rates">{priceRateSummary(override)}</span><ConfirmButton label={t('settings.action.remove')} prompt={t('settings.confirm.removePrompt')} onConfirm={() => void codeburn.removePriceOverride(override.model).then(result => complete(result)).catch(toastRejection(t('settings.pricing.actionFailed')))} /></div>)}
-      <div className="set-price-form">
-        <input aria-label={t('settings.pricing.modelAriaLabel')} className="set-input set-mono set-price-model" placeholder={t('settings.pricing.modelPlaceholder')} value={model} onChange={event => setModel(event.target.value)} />
-        <input aria-label={t('settings.pricing.inputAriaLabel')} className="set-input" inputMode="decimal" placeholder={t('settings.pricing.inputPlaceholder')} value={input} onChange={event => setInput(event.target.value)} />
-        <input aria-label={t('settings.pricing.outputAriaLabel')} className="set-input" inputMode="decimal" placeholder={t('settings.pricing.outputPlaceholder')} value={output} onChange={event => setOutput(event.target.value)} />
-        <input aria-label={t('settings.pricing.cacheReadAriaLabel')} className="set-input" inputMode="decimal" placeholder={t('settings.pricing.cacheReadPlaceholder')} value={cacheRead} onChange={event => setCacheRead(event.target.value)} />
-        <input aria-label={t('settings.pricing.cacheCreateAriaLabel')} className="set-input" inputMode="decimal" placeholder={t('settings.pricing.cacheCreatePlaceholder')} value={cacheCreation} onChange={event => setCacheCreation(event.target.value)} />
-        <button className="btnp btnp-primary" disabled={!model.trim() || !input.trim() || !output.trim()} onClick={add}>{t('settings.action.add')}</button>
-      </div>
-      {error && <p className="set-action-msg error">{error}</p>}
-    </div></div>
-    <p className="set-cap">{t('settings.pricing.hint')}</p>
-  </section>
-}
-
-function planSummaries(status: StatusJson): JsonPlanSummary[] {
-  if (status.plans) return Object.values(status.plans).filter((plan): plan is JsonPlanSummary => Boolean(plan))
-  return status.plan ? [status.plan] : []
-}
-
 function DetectedRow({ quota, enabled, onToggle, onReconnect }: { quota: QuotaProvider; enabled: boolean; onToggle: () => void; onReconnect: () => void }) {
   return <div className="about-row">
     <ProviderLogo provider={quota.provider} />
@@ -546,10 +417,8 @@ function DetectedRow({ quota, enabled, onToggle, onReconnect }: { quota: QuotaPr
   </div>
 }
 
-function PlansPane({ period, refreshToken, onNavigate, onConfigMutated }: { period: Period; refreshToken: number; onNavigate?: (section: Section) => void; onConfigMutated?: () => void }) {
-  const [nonce, setNonce] = useState(0)
-  // Steady poll serves cached quota (force=false); the Connect affordance's
-  // Refresh forces a keychain-allowed fetch via the same path as Plans.tsx.
+function PlansPane({ refreshToken, onNavigate }: { refreshToken: number; onNavigate?: (section: Section) => void }) {
+  // Keep the provider quota controls in Settings so users can reconnect or hide providers.
   const [reconnectNonce, setReconnectNonce] = useState(0)
   const [disabledProviders, setDisabledProviders] = useState<ProviderName[]>(() => readDisabledProviders())
   const lastForced = useRef(`${refreshToken}:${reconnectNonce}`)
@@ -559,22 +428,7 @@ function PlansPane({ period, refreshToken, onNavigate, onConfigMutated }: { peri
     lastForced.current = key
     return codeburn.getQuota(force, disabledProviders)
   }, [refreshToken, reconnectNonce, disabledProviders])
-  const plans = usePolled<StatusJson>(() => codeburn.getPlans(period), [period, refreshToken, nonce], {
-    memoKey: reportMemoKey('plans', period),
-  })
-  const [presetId, setPresetId] = useState(MANUAL_PLAN_PRESETS[0]!.id)
-  const configured = plans.data ? planSummaries(plans.data) : []
 
-  const finish = (result: ActionResult) => {
-    showToast(result.ok ? (result.stdout.trim() || t('settings.plans.updated')) : (result.stderr || t('settings.plans.actionFailed')), result.ok ? 'ok' : 'error')
-    if (result.ok) { setNonce(value => value + 1); onConfigMutated?.() }
-  }
-  const remove = (plan: JsonPlanSummary) => {
-    void codeburn.resetPlan(plan.provider).then(finish).catch(toastRejection(t('settings.plans.actionFailed')))
-  }
-  // Toggling a provider off stops polling it entirely (the main process never
-  // contacts its endpoints); toggling on forces a fresh fetch so the row
-  // repopulates immediately.
   const toggleProvider = (provider: ProviderName) => {
     const next = disabledProviders.includes(provider)
       ? disabledProviders.filter(item => item !== provider)
@@ -582,11 +436,6 @@ function PlansPane({ period, refreshToken, onNavigate, onConfigMutated }: { peri
     writeDisabledProviders(next)
     setDisabledProviders(next)
     setReconnectNonce(value => value + 1)
-  }
-  const add = () => {
-    const preset = MANUAL_PLAN_PRESETS.find(item => item.id === presetId)!
-    trackEvent('plan_set', { provider: preset.provider, plan: preset.id })
-    void codeburn.setPlan(preset.id, preset.provider).then(finish).catch(toastRejection(t('settings.plans.actionFailed')))
   }
 
   return <section className="set-p on">
@@ -607,15 +456,6 @@ function PlansPane({ period, refreshToken, onNavigate, onConfigMutated }: { peri
             onReconnect={() => setReconnectNonce(value => value + 1)}
           />
         })}
-      </div>
-    </div>
-    <div className="card">
-      <div className="about-sec">
-        <div className="about-sec-h">{t('settings.plans.manualHeading')}</div>
-        {plans.error ? <SettingsErrorText error={plans.error} /> : !plans.data ? <p className="set-cap">{t('settings.plans.loading')}</p> : configured.length === 0 ? <p className="set-cap">{t('settings.plans.emptyManual')}</p> : configured.map(plan => <div className="about-row" key={plan.provider}><span className="tx">{PLAN_PRESETS.find(item => item.id === plan.id)?.label ?? plan.id}<small>{t('settings.plans.perMonth', { budget: formatConverted(plan.budget) })} · {plan.provider} · {t('settings.plans.percentUsed', { percent: plan.percentUsed })}</small>{(plan.provider === 'claude' || plan.provider === 'codex') && <small>{t('settings.plans.superseded')}</small>}</span><span className="r"><ConfirmButton label={t('settings.action.remove')} prompt={t('settings.confirm.removePrompt')} onConfirm={() => remove(plan)} /></span></div>)}
-      </div>
-      <div className="about-sec set-last-sec">
-        <div className="about-row"><label className="tx" htmlFor="settings-plan-preset">{t('settings.plans.addLabel')}</label><span className="r"><Dropdown id="settings-plan-preset" ariaLabel={t('settings.plans.addLabel')} value={presetId} options={MANUAL_PLAN_PRESETS.map(preset => ({ value: preset.id, label: preset.label }))} onChange={value => setPresetId(value as PlanPreset['id'])} width={160} /><button className="btnp btnp-primary" onClick={add}>{t('settings.action.add')}</button></span></div>
       </div>
     </div>
     <p className="set-cap">{t('settings.plans.footerNote')} <button className="set-text-button" onClick={() => onNavigate?.('plans')}>{t('settings.plans.openPlans')}</button></p>
@@ -805,7 +645,7 @@ function PairedPanel({ devices, period, onRefresh }: { devices: ReturnType<typeo
       onRefresh()
     }).catch(toastRejection(t('settings.devices.removeFailed')))
   }
-  return <Panel title={t('settings.devices.pairedTitle')} right={<button className="set-text-button" onClick={onRefresh}>{t('settings.devices.refreshButton')}</button>}>{!devices.data && devices.error ? <SettingsErrorText error={devices.error} /> : !devices.data ? <p className="set-cap">{t('settings.devices.loadingPaired')}</p> : paired.length === 0 ? <p className="set-cap">{t('settings.devices.noPaired')}</p> : paired.map(device => <div className="li" key={device.id}><div className="lx"><b>{device.name}</b><span>{formatCount(device.sessions, 'session')} · {formatUsd(device.cost)} {periodLabel(period)}</span></div><ConfirmButton label={t('settings.action.remove')} prompt={t('settings.confirm.removePrompt')} onConfirm={() => remove(device.name)} /></div>)}{devices.data && devices.data.combined.deviceCount > 1 && <div className="li"><div className="lx"><b>{t('settings.devices.combinedActive')} · {formatCount(devices.data.combined.deviceCount, 'device')}</b></div></div>}{error && <p className="set-action-msg error">{error}</p>}</Panel>
+  return <Panel title={t('settings.devices.pairedTitle')} right={<button className="set-text-button" onClick={onRefresh}>{t('settings.devices.refreshButton')}</button>}>{!devices.data && devices.error ? <SettingsErrorText error={devices.error} /> : !devices.data ? <p className="set-cap">{t('settings.devices.loadingPaired')}</p> : paired.length === 0 ? <p className="set-cap">{t('settings.devices.noPaired')}</p> : paired.map(device => <div className="li" key={device.id}><div className="lx"><b>{device.name}</b><span>{formatCount(device.sessions, 'session')} · {periodLabel(period)}</span></div><ConfirmButton label={t('settings.action.remove')} prompt={t('settings.confirm.removePrompt')} onConfirm={() => remove(device.name)} /></div>)}{devices.data && devices.data.combined.deviceCount > 1 && <div className="li"><div className="lx"><b>{t('settings.devices.combinedActive')} · {formatCount(devices.data.combined.deviceCount, 'device')}</b></div></div>}{error && <p className="set-action-msg error">{error}</p>}</Panel>
 }
 
 function SettingsErrorText({ error }: { error: CliError }) {

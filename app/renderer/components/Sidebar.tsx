@@ -5,7 +5,7 @@ import { displayVersion, isIdeHost, isModifierChord, shortcutLabel } from '../li
 import { AboutModal } from './AboutModal'
 import { Icon } from './icons'
 
-export type Section = 'overview' | 'sessions' | 'pullRequests' | 'spend' | 'optimize' | 'models' | 'compare' | 'periods' | 'plans' | 'settings' | 'plugins'
+export type Section = 'overview' | 'sessions' | 'pullRequests' | 'models' | 'compare' | 'periods' | 'plans' | 'settings' | 'plugins'
 
 type NavItem = { id: Section; label: string; key: string; icon: ReactNode }
 
@@ -24,14 +24,12 @@ export function navGroups(): Array<{ label?: string; items: NavItem[] }> {
       items: [
         { id: 'sessions', label: t('shell.nav.sessions'), key: '2', icon: <Icon name="list" /> },
         { id: 'pullRequests', label: t('shell.nav.pullRequests'), key: '3', icon: <Icon name="git-pull-request" /> },
-        { id: 'spend', label: t('shell.nav.spend'), key: '4', icon: <Icon name="coins" /> },
         { id: 'models', label: t('shell.nav.models'), key: '6', icon: <Icon name="box" /> },
       ],
     },
     {
       label: t('shell.navGroup.insight'),
       items: [
-        { id: 'optimize', label: t('shell.nav.optimize'), key: '5', icon: <Icon name="sparkles" /> },
         { id: 'compare', label: t('shell.nav.compare'), key: '7', icon: <Icon name="scale" /> },
         { id: 'periods', label: t('shell.nav.periods'), key: '9', icon: <Icon name="calendar-range" /> },
       ],

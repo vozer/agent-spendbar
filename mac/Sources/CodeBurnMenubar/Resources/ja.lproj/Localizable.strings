@@ -710,3 +710,5 @@
 "Monthly usage" = "月間の使用量";
 "Percent of monthly budget used. A tilde marks estimated or partial data." = "月間予算の使用率です。チルダは推定値または一部のデータを示します。";
 "How often the app refreshes local provider usage. Auto refreshes every 30 seconds while you're plugged in and backs off on battery." = "ローカルのプロバイダー使用量を更新する頻度です。自動では電源接続時に30秒ごとに更新し、バッテリー駆動時は間隔を空けます。";
+"Avg/session" = "平均/セッション";
+"Other models · %1$@ calls · %2$@ tokens" = "その他のモデル · 呼び出し %1$@ 回 · %2$@ トークン";

@@ -7,16 +7,13 @@ import { Panel } from '../components/Panel'
 import { SectionSkeleton } from '../components/Skeleton'
 import { SegTabs } from '../components/SegTabs'
 import { StaleBanner } from '../components/StaleBanner'
-import type { Section } from '../components/Sidebar'
 import { usePolled } from '../hooks/usePolled'
-import { formatCompact, formatUsd, isEstimatedCost } from '../lib/format'
-import { Usd, tokensOf } from '../components/Usd'
+import { formatCompact } from '../lib/format'
 import { codeburn } from '../lib/ipc'
 import { categoryFilters, modelFilters } from '../lib/investigation'
 import { reportMemoKey } from '../lib/reportMemoKey'
 import type { AuditRow, DateRange, ModelReportRow, Period } from '../lib/types'
 import { t } from '../i18n'
-import type { SettingsPane } from './Settings'
 import type { InvestigateRequest } from './Overview'
 
 type ModelsLens = 'model' | 'task' | 'audit'
@@ -42,12 +39,11 @@ export function Models({
   provider: string
   range?: DateRange | null
   refreshToken?: number
-  onNavigate?: (section: Section, pane?: SettingsPane) => void
+  onNavigate?: (section: 'compare') => void
   onInvestigate?: (request: InvestigateRequest) => void
   ready?: boolean
 }) {
   const [lens, setLens] = useState<ModelsLens>('model')
-  const onAddAlias = () => onNavigate?.('settings', 'aliases')
   const lenses = [
     { value: 'model', label: t('models.lens.byModel') },
     { value: 'task', label: t('models.lens.byTask') },
@@ -77,7 +73,6 @@ export function Models({
           range={range}
           byTask={lens === 'task'}
           refreshToken={refreshToken}
-          onAddAlias={onAddAlias}
           onInvestigate={onInvestigate}
           ready={ready}
           title={title}
@@ -94,7 +89,6 @@ function ModelsUsage({
   range,
   byTask,
   refreshToken,
-  onAddAlias,
   onInvestigate,
   ready,
   title,
@@ -105,7 +99,6 @@ function ModelsUsage({
   range: DateRange | null
   byTask: boolean
   refreshToken: number
-  onAddAlias: () => void
   onInvestigate?: (request: InvestigateRequest) => void
   ready: boolean
   title: ReactNode
@@ -127,23 +120,13 @@ function ModelsUsage({
       {report.error && <StaleBanner error={report.error} />}
       <Panel className="scroll-x" title={title} right={controls}>
         {report.data.length ? (
-          <ModelsTable rows={report.data} byTask={byTask} onAddAlias={onAddAlias} onInvestigate={onInvestigate} />
+          <ModelsTable rows={report.data} byTask={byTask} onInvestigate={onInvestigate} />
         ) : (
           <EmptyNote>{t('models.empty.noUsage')}</EmptyNote>
         )}
       </Panel>
     </>
   )
-}
-
-// The audit lens checks the pricing math, not the token source: " est" marks a
-// row with no live pricing entry, or whose attributed cost diverges from a
-// straight rate x displayed-token recompute (fast-mode multipliers or the
-// 1-hour cache rate that calculateCost applies). The `~` marker in the other
-// lenses is the per-call estimated flag and is a separate signal.
-function auditEstimated(row: AuditRow): boolean {
-  if (!row.rates) return true
-  return Math.abs(row.cost.recomputedTotalUSD - row.attributedCostUSD) > 0.005
 }
 
 function AuditLens({
@@ -202,7 +185,6 @@ function AuditTable({ rows }: { rows: AuditRow[] }) {
           <th>{t('models.headers.normOut')}</th>
           <th>{t('models.headers.cacheWr')}</th>
           <th>{t('models.headers.cacheRd')}</th>
-          <th>{t('models.headers.cost')}</th>
         </tr>
       </thead>
       <tbody>
@@ -215,7 +197,6 @@ function AuditTable({ rows }: { rows: AuditRow[] }) {
 }
 
 function AuditTableRow({ row }: { row: AuditRow }) {
-  const estimated = auditEstimated(row)
   return (
     <tr>
       <td title={row.model}>
@@ -229,21 +210,16 @@ function AuditTableRow({ row }: { row: AuditRow }) {
       <td>{formatCompact(row.displayed.outputTokens)}</td>
       <td>{formatCompact(row.displayed.cacheWriteTokens)}</td>
       <td>{formatCompact(row.displayed.cacheReadTokens)}</td>
-      <td>
-        {formatUsd(row.attributedCostUSD)}
-        {estimated ? <span className="est" title={t('models.audit.estimatedTitle')}>{t('models.audit.estimatedSuffix')}</span> : null}
-      </td>
     </tr>
   )
 }
 
-function ModelsTable({ rows, byTask, onAddAlias, onInvestigate }: {
+function ModelsTable({ rows, byTask, onInvestigate }: {
   rows: ModelReportRow[]
   byTask: boolean
-  onAddAlias: () => void
   onInvestigate?: (request: InvestigateRequest) => void
 }) {
-  if (byTask) return <ModelsByTaskTable rows={rows} onAddAlias={onAddAlias} onInvestigate={onInvestigate} />
+  if (byTask) return <ModelsByTaskTable rows={rows} onInvestigate={onInvestigate} />
 
   return (
     <table>
@@ -254,22 +230,19 @@ function ModelsTable({ rows, byTask, onAddAlias, onInvestigate }: {
           <th>{t('models.headers.input')}</th>
           <th>{t('models.headers.output')}</th>
           <th>{t('models.headers.cacheRead')}</th>
-          <th>{t('models.headers.cost')}</th>
-          <th>{t('models.headers.saved')}</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((row, i) => (
-          <ModelTableRow key={`${row.provider}-${row.model}-${i}`} row={row} onAddAlias={onAddAlias} onInvestigate={onInvestigate} />
+          <ModelTableRow key={`${row.provider}-${row.model}-${i}`} row={row} onInvestigate={onInvestigate} />
         ))}
       </tbody>
     </table>
   )
 }
 
-function ModelsByTaskTable({ rows, onAddAlias, onInvestigate }: {
+function ModelsByTaskTable({ rows, onInvestigate }: {
   rows: ModelReportRow[]
-  onAddAlias: () => void
   onInvestigate?: (request: InvestigateRequest) => void
 }) {
   const groups = groupTaskRows(rows)
@@ -283,13 +256,11 @@ function ModelsByTaskTable({ rows, onAddAlias, onInvestigate }: {
           <th>{t('models.headers.input')}</th>
           <th>{t('models.headers.output')}</th>
           <th>{t('models.headers.cacheRead')}</th>
-          <th>{t('models.headers.cost')}</th>
-          <th>{t('models.headers.saved')}</th>
         </tr>
       </thead>
       {groups.map(group => (
         <tbody className="model-task-group" key={`${group.provider}-${group.model}`}>
-          <ModelGroupRow rows={group.rows} onAddAlias={onAddAlias} onInvestigate={onInvestigate} />
+          <ModelGroupRow rows={group.rows} onInvestigate={onInvestigate} />
           {group.rows.map((row, i) => (
             <ModelTaskRow key={`${row.category ?? 'all'}-${i}`} row={row} onInvestigate={onInvestigate} />
           ))}
@@ -299,14 +270,7 @@ function ModelsByTaskTable({ rows, onAddAlias, onInvestigate }: {
   )
 }
 
-function ModelTableRow({ row, onAddAlias, onInvestigate }: { row: ModelReportRow; onAddAlias: () => void; onInvestigate?: (request: InvestigateRequest) => void }) {
-  const unpriced = row.costUSD === 0 && row.savingsUSD === 0
-  const cellClass = unpriced ? 'dim' : undefined
-  // Calls and token columns are observed usage, not a pricing artifact: a
-  // model with no pricing entry still made real calls and burned real
-  // input/output/cache-read tokens, so they render at full weight. Only
-  // cost/saved collapse to dashes behind the alias affordance — there is no
-  // attributed cost to show for them.
+function ModelTableRow({ row, onInvestigate }: { row: ModelReportRow; onInvestigate?: (request: InvestigateRequest) => void }) {
   const dotStyle = {
     display: 'inline-block',
     background: seriesColorForModel(row.modelDisplayName || row.model),
@@ -318,41 +282,29 @@ function ModelTableRow({ row, onAddAlias, onInvestigate }: { row: ModelReportRow
 
   return (
     <tr>
-      <td className={cellClass} title={row.model}>
+      <td title={row.model}>
         <span className="mdot" style={dotStyle} />
         {onInvestigate ? (
           <button type="button" className="ov-link" title={t('models.viewSessionsFor', { name: row.modelDisplayName })} onClick={() => onInvestigate({ filters: modelFilters(drillModelKeys) })}>{row.modelDisplayName}</button>
         ) : row.modelDisplayName}
-        {unpriced ? (
-          <>
-            {' '}
-            <button type="button" className="alias" onClick={onAddAlias}>{t('models.addAlias')}</button>
-          </>
-        ) : null}
         <span style={{ ...providerTagStyle, display: 'block', marginTop: 2, paddingLeft: 16 }}>{row.providerDisplayName}</span>
       </td>
       <td>{fmtInt(row.calls)}</td>
       <td>{formatCompact(row.inputTokens)}</td>
       <td>{formatCompact(row.outputTokens)}</td>
       <td>{formatCompact(row.cacheReadTokens)}</td>
-      <td className={cellClass}>{unpriced ? '—' : <Usd value={row.costUSD} tokens={tokensOf(row)} estimated={isEstimatedCost(row.costUSD, row.estimatedCostUSD)} />}</td>
-      <td className={unpriced ? 'dim' : row.savingsUSD > 0 ? 'pos' : undefined}>{unpriced ? '—' : formatUsd(row.savingsUSD)}</td>
     </tr>
   )
 }
 
-function ModelGroupRow({ rows, onAddAlias, onInvestigate }: { rows: ModelReportRow[]; onAddAlias: () => void; onInvestigate?: (request: InvestigateRequest) => void }) {
+function ModelGroupRow({ rows, onInvestigate }: { rows: ModelReportRow[]; onInvestigate?: (request: InvestigateRequest) => void }) {
   const model = rows[0]
   const calls = rows.reduce((sum, row) => sum + row.calls, 0)
-  const costUSD = rows.reduce((sum, row) => sum + row.costUSD, 0)
-  const savingsUSD = rows.reduce((sum, row) => sum + row.savingsUSD, 0)
-  const estimatedCostUSD = rows.reduce((sum, row) => sum + (row.estimatedCostUSD ?? 0), 0)
-  const unpriced = costUSD === 0 && savingsUSD === 0
   const drillModelKeys = [...new Set(rows.map(row => row.modelDisplayName))].filter(Boolean)
 
   return (
     <tr className="model-group-row">
-      <td className={unpriced ? 'dim' : undefined} title={model.model}>
+      <td title={model.model}>
         <span className="model-group-lead">
           <span
             className="mdot"
@@ -366,37 +318,28 @@ function ModelGroupRow({ rows, onAddAlias, onInvestigate }: { rows: ModelReportR
             )}
             <span style={providerTagStyle}>{model.providerDisplayName}</span>
           </span>
-          {unpriced ? <button type="button" className="alias" onClick={onAddAlias}>{t('models.addAlias')}</button> : null}
         </span>
       </td>
       <td>{fmtInt(calls)}</td>
       <td aria-label={t('models.aggregate.noInput')} />
       <td aria-label={t('models.aggregate.noOutput')} />
       <td aria-label={t('models.aggregate.noCacheRead')} />
-      <td className={unpriced ? 'dim' : undefined}>{unpriced ? '—' : <Usd value={costUSD} estimated={isEstimatedCost(costUSD, estimatedCostUSD)} />}</td>
-      <td className={unpriced ? 'dim' : savingsUSD > 0 ? 'pos' : undefined}>{unpriced ? '—' : formatUsd(savingsUSD)}</td>
     </tr>
   )
 }
 
 function ModelTaskRow({ row, onInvestigate }: { row: ModelReportRow; onInvestigate?: (request: InvestigateRequest) => void }) {
-  const unpriced = row.costUSD === 0 && row.savingsUSD === 0
-  const cellClass = unpriced ? 'dim' : undefined
-
   return (
     <tr className="model-task-row">
-      <td className={cellClass}>
+      <td>
         {onInvestigate && row.category ? (
           <button type="button" className="ov-link" title={t('models.viewCategorySessions', { category: row.category })} onClick={() => onInvestigate({ filters: categoryFilters(row.category!) })}>{row.category ?? 'general'}</button>
         ) : row.category ?? 'general'}
       </td>
       <td>{fmtInt(row.calls)}</td>
-      {/* Observed usage renders even for unpriced models — see ModelTableRow. */}
       <td>{formatCompact(row.inputTokens)}</td>
       <td>{formatCompact(row.outputTokens)}</td>
       <td>{formatCompact(row.cacheReadTokens)}</td>
-      <td className={cellClass}>{unpriced ? '—' : <Usd value={row.costUSD} tokens={tokensOf(row)} estimated={isEstimatedCost(row.costUSD, row.estimatedCostUSD)} />}</td>
-      <td className={unpriced ? 'dim' : row.savingsUSD > 0 ? 'pos' : undefined}>{unpriced ? '—' : formatUsd(row.savingsUSD)}</td>
     </tr>
   )
 }

@@ -149,7 +149,7 @@ enum CapacityDockGlance {
     static let pillHeight: CGFloat = 46
     static let pillGap: CGFloat = 6
     /// Four stacked lines, 13 + 13 + 13 + 12, with three 3pt gaps. Taller than the
-    /// 17pt burned figure beside it, so it sets the row. The fourth line is the
+    /// 17pt session count beside it, so it sets the row. The fourth line is the
     /// cache-read figure, which drops out when the payload carries no
     /// provider-scoped cache accounting — the reserved height does not move with
     /// it, exactly like the input/output pair above it.
@@ -946,7 +946,7 @@ struct CapacityDockDetailView: View {
             if let today = store.capacityDockToday(for: provider) {
                 todaySection(today).dividerBelow()
             }
-            if CapacityDockGlance.drawsWindows(quota) { windowsSection(quota) }
+            if CapacityDockGlance.drawsWindows(quota) { windowsSection(quota, provider: provider) }
             Spacer(minLength: 0)
             connectButton(provider, quota: quota)
         }
@@ -1169,15 +1169,13 @@ struct CapacityDockDetailView: View {
         VStack(alignment: .leading, spacing: 0) {
             sectionCaption(L("Today"), trailing: nil)
             HStack(alignment: .firstTextBaseline, spacing: 8 * s) {
-                HStack(alignment: .firstTextBaseline, spacing: 5 * s) {
-                    Text(today.cost.asUSD())
-                        .font(.system(size: 17, weight: .semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(Color.capacityDockText)
-                    Text(L("burned"))
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(Color.capacityDockText.opacity(0.6))
-                }
+                let sessions = today.sessions.map {
+                    SessionCountLabel.text(sessions: $0, basis: today.sessionCountBasis)
+                } ?? L("%@ calls", today.calls.asThousandsSeparated())
+                Text(sessions)
+                    .font(.system(size: 17, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.capacityDockText)
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 3 * s) {
                     // Absent on a CLI that predates per-provider tokens. Showing
@@ -1222,15 +1220,11 @@ struct CapacityDockDetailView: View {
         .frame(height: 13 * s)
     }
 
-    /// Reused input tokens, kept apart from the `arrow.down` fresh-input figure
-    /// and from cache writes: this is the part of the prompt the provider served
-    /// from its cache at the discounted rate that `cost` already includes.
+    /// Reused input tokens, kept apart from fresh input and cache writes.
     @ViewBuilder
     private func cacheReadLine(_ value: Double) -> some View {
         let s = model.detailScale
-        let explanation = L(
-            "Input tokens reused from this provider's prompt cache today — not fresh input (arrow.down), not cache writes, and already priced at the cache-read rate inside the burned figure."
-        )
+        let explanation = L("Cache read: %@ tokens", value.asCompactTokens().lowercasedThousands())
         HStack(spacing: 4 * s) {
             Image(systemName: "arrow.triangle.2.circlepath")
                 .font(.system(size: 9, weight: .semibold))
@@ -1254,12 +1248,12 @@ struct CapacityDockDetailView: View {
     /// Up to three windows share a compact row; four use two rows. Cell width
     /// comes from the actual content geometry, including its inter-column gap.
     @ViewBuilder
-    private func windowsSection(_ quota: QuotaSummary) -> some View {
+    private func windowsSection(_ quota: QuotaSummary, provider: CapacityDockProvider) -> some View {
         let s = model.detailScale
         let windows = CapacityDockGlance.windows(quota)
         Group {
             if windows.isEmpty {
-                budgetLine()
+                usageLine(for: store.capacityDockToday(for: provider))
                     .frame(height: CapacityDockGlance.captionLine * s)
             } else {
                 windowGrid(windows, scale: s)
@@ -1368,15 +1362,22 @@ struct CapacityDockDetailView: View {
         )
     }
 
-    /// No quota window exists for this provider, so money is the capacity.
+    /// Providers without quota windows still show their observed usage counts.
     @ViewBuilder
-    private func budgetLine() -> some View {
-        let spend = store.capacityDockToday?.cost ?? 0
-        let budget = store.activeDailyBudget
-        Text(budget > 0 ? L("today %1$@ of %2$@", spend.asUSD(), budget.asUSD()) : L("no budget set"))
-            .font(.system(size: 11))
-            .monospacedDigit()
-            .foregroundStyle(Color.capacityDockText.opacity(0.6))
+    private func usageLine(for today: ProviderDetail?) -> some View {
+        if let today {
+            let tokens = (today.inputTokens ?? 0) + (today.outputTokens ?? 0)
+            Text(tokens > 0
+                 ? L("%@ tokens", tokens.asCompactTokens())
+                 : L("%@ calls", today.calls.asThousandsSeparated()))
+                .font(.system(size: 11))
+                .monospacedDigit()
+                .foregroundStyle(Color.capacityDockText.opacity(0.6))
+        } else {
+            Text(L("No tracked usage"))
+                .font(.system(size: 11))
+                .foregroundStyle(Color.capacityDockText.opacity(0.6))
+        }
     }
 
     @ViewBuilder

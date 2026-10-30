@@ -2,38 +2,23 @@ import { useEffect, useMemo, useRef } from 'react'
 
 import { Stat } from './Stat'
 import { useEscape } from '../hooks/useEscape'
-import { formatCompact, formatCount, formatDayLong, formatDuration, formatUsd, shortenProjectPath } from '../lib/format'
+import { formatCompact, formatCount, formatDayLong, formatDuration, shortenProjectPath } from '../lib/format'
 import { DUR, useExitAnimation } from '../lib/motion'
 import { codeburn } from '../lib/ipc'
-import type { InvestigationFilters } from '../lib/investigation'
-import { contributeRow } from '../lib/investigation'
-import type { SessionDrillRow, SessionRow } from '../lib/types'
+import { contributeRow, type InvestigationFilters } from '../lib/investigation'
+import type { ContributionSegment, SessionDrillRow, SessionRow } from '../lib/types'
 import { Icon } from './icons'
 import { t } from '../i18n'
 
-/**
- * The drill-through side drawer: a plain-language read of one session, then the
- * cost/token figures and every link the report carries (PR URLs). All content
- * derives from the already-loaded contributions report, and the heavy
- * breakdowns below only render while the drawer is open (lazy by mount, not by
- * fetch), so the list behind it stays responsive. Transcript text crosses IPC
- * only for the session view (SessionView.tsx): read on demand when that view
- * opens, never cached, never synced or sent in telemetry.
- *
- * A11y contract: role="dialog", Escape closes, focus moves into the panel on
- * open and the PARENT returns focus to the control that opened it (the opener
- * element is still alive behind the drawer). Tab is trapped inside.
- */
-export function SessionDrawer({ row, openKey, filters, medianCost, onClose }: {
+type UsageRow = { key: string; label: string; count: number; url?: string }
+type Breakdowns = { models: UsageRow[]; categories: UsageRow[]; branches: UsageRow[]; days: UsageRow[]; prs: UsageRow[] }
+
+/** Session analytics shown from the Sessions list. The detail keeps activity,
+ *  model, token, branch, and pull request data without displaying cost fields. */
+export function SessionDrawer({ row, openKey, filters, onClose }: {
   row: SessionDrillRow
-  /** Row identity, so a drawer still exiting on the old row disarms its close
-   *  when the user picks a new one. */
   openKey: string
   filters: InvestigationFilters
-  /** Median cost of the sessions the list is currently showing (the searched
-   *  and filtered set). Absent when the population is too small for the
-   *  comparison to mean anything. */
-  medianCost?: number
   onClose: () => void
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -46,7 +31,6 @@ export function SessionDrawer({ row, openKey, filters, medianCost, onClose }: {
     panel?.focus()
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Tab' || !panel) return
-      // Keep Tab cycling inside the drawer while it is open.
       const focusable = panel.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
       if (focusable.length === 0) return
       const first = focusable[0]!
@@ -88,54 +72,33 @@ export function SessionDrawer({ row, openKey, filters, medianCost, onClose }: {
           <button type="button" className="drawer-close" aria-label={t('sessions.drawer.closeAriaLabel')} onClick={beginExit}><Icon name="x" /></button>
         </div>
 
-        <SessionDetails row={row} filters={filters} medianCost={medianCost} />
+        <SessionDetails row={row} filters={filters} />
       </aside>
     </>
   )
 }
 
-/** The session's cost, tokens, models, categories, branches and PRs, from the
- *  contributions report. The drawer's body, and the session view's details. */
-export function SessionDetails({ row, filters, medianCost }: { row: SessionDrillRow; filters: InvestigationFilters; medianCost?: number }) {
-  const contribution = useMemo(() => contributeRow(row, filters), [row, filters])
+export function SessionDetails({ row, filters }: { row: SessionDrillRow; filters: InvestigationFilters }) {
   const breakdown = useMemo(() => buildBreakdowns(row), [row])
+  const contribution = useMemo(() => contributeRow(row, filters), [row, filters])
+  const calls = contribution?.calls ?? row.calls
+  const tokens = contribution?.tokens ?? row.inputTokens + row.outputTokens
   const cacheTotal = row.inputTokens + row.cacheReadTokens
   const cacheHit = cacheTotal > 0 ? Math.round(row.cacheReadTokens / cacheTotal * 100) : 0
-  const median = medianCost !== undefined && medianCost > 0 ? medianCost : null
-  const selectedCost = contribution !== null && contribution.cost < row.cost - 1e-9 ? contribution.cost : null
-  const leadCost = selectedCost ?? row.cost
-  // Past 100x the multiple says nothing the dollar figure has not already said.
-  const ratio = median === null || leadCost / median > 100 ? null : leadCost / median
   const foldLabel = branchPrLabel(breakdown)
 
   return (
     <>
       <p className="drawer-lead">
-        {selectedCost === null ? t('sessions.drawer.leadCost') : t('sessions.drawer.leadCostSelection')}
-        <b>{formatUsd(leadCost)}</b>
-        {ratio === null
-          ? '.'
-          : ratio < 0.1
-            ? t('sessions.drawer.leadFraction')
-            : <>{t('sessions.drawer.leadRatioPrefix')}<b>{formatRatio(ratio)}{t('sessions.drawer.ratioUnit')}</b>{t('sessions.drawer.leadRatioSuffix')}</>}
+        {formatCount(calls, 'call')} · {formatCompact(tokens)} {t('sessions.summary.tokens')}
+        {row.models.length > 0 && <> · {row.models.join(', ')}</>}
       </p>
 
       <div className="stats drawer-tiles">
-        <Stat
-          label={t('sessions.drawer.statCostLabel')}
-          value={formatUsd(leadCost)}
-          delta={selectedCost !== null
-            ? t('sessions.drawer.deltaOfTotal', { total: formatUsd(row.cost) })
-            : ratio === null
-              ? t('sessions.drawer.deltaFullSession')
-              : ratio < 0.1
-                ? <span className="down">{t('sessions.drawer.deltaBelowMedian')}</span>
-                : <span className={ratio >= 1 ? 'up' : 'down'}>{t('sessions.drawer.deltaRatioMedian', { ratio: `${formatRatio(ratio)}${t('sessions.drawer.ratioUnit')}` })}</span>}
-        />
         <Stat label={t('sessions.drawer.statTurnsLabel')} value={row.turns.toLocaleString()} delta={formatCount(row.calls, 'call')} />
-        {row.durationMs > 0
-          ? <Stat label={t('sessions.drawer.statDurationLabel')} value={formatDuration(row.durationMs)} delta={t('sessions.drawer.deltaWallClock')} />
-          : <Stat label={t('sessions.drawer.statCallsLabel')} value={row.calls.toLocaleString()} delta={t('sessions.drawer.deltaApiCalls')} />}
+        <Stat label={t('sessions.drawer.statCallsLabel')} value={row.calls.toLocaleString()} delta={t('sessions.drawer.deltaApiCalls')} />
+        <Stat label={t('sessions.drawer.statInputLabel')} value={formatCompact(row.inputTokens)} delta={t('sessions.drawer.deltaTokensSent')} />
+        <Stat label={t('sessions.drawer.statOutputLabel')} value={formatCompact(row.outputTokens)} delta={t('sessions.drawer.deltaTokensGenerated')} />
       </div>
 
       {row.isSidechain && row.parentSessionId && (
@@ -158,8 +121,6 @@ export function SessionDetails({ row, filters, medianCost }: { row: SessionDrill
         </summary>
         <div className="drawer-fold-body">
           <div className="stats">
-            <Stat label={t('sessions.drawer.statInputLabel')} value={formatCompact(row.inputTokens)} delta={t('sessions.drawer.deltaTokensSent')} />
-            <Stat label={t('sessions.drawer.statOutputLabel')} value={formatCompact(row.outputTokens)} delta={t('sessions.drawer.deltaTokensGenerated')} />
             <Stat label={t('sessions.drawer.statCacheReadLabel')} value={formatCompact(row.cacheReadTokens)} delta={t('sessions.drawer.deltaCacheHit', { percent: cacheHit })} />
             <Stat label={t('sessions.drawer.statCacheWriteLabel')} value={formatCompact(row.cacheWriteTokens)} delta={t('sessions.drawer.deltaTokensCached')} />
           </div>
@@ -170,151 +131,95 @@ export function SessionDetails({ row, filters, medianCost }: { row: SessionDrill
         <details className="drawer-fold">
           <summary>{t('sessions.drawer.branchesPrsSummary', { label: foldLabel })}</summary>
           <div className="drawer-fold-body">
-            <DrawerBreakdown label={t('sessions.drawer.branchesLabel')} rows={breakdown.branches} caption={t('sessions.drawer.branchesCaption')} />
+            <DrawerBreakdown label={t('sessions.drawer.branchesLabel')} rows={breakdown.branches} />
             {breakdown.days.length > 1 && <DrawerBreakdown label={t('sessions.drawer.daysLabel')} rows={breakdown.days} />}
-            <DrawerBreakdown label={t('sessions.drawer.prsLabel')} rows={breakdown.prs} caption={t('sessions.drawer.prsCaption')} link />
-            {breakdown.unattributedPrCost > 0 && (
-              <p className="drawer-note">{t('sessions.drawer.notTiedToPr', { amount: formatUsd(breakdown.unattributedPrCost) })}</p>
-            )}
+            <DrawerBreakdown label={t('sessions.drawer.prsLabel')} rows={breakdown.prs} link />
           </div>
         </details>
       )}
-
-      <p className="drawer-note">
-        {row.savingsUSD > 0 ? t('sessions.drawer.savedBaseline', { amount: formatUsd(row.savingsUSD) }) : t('sessions.drawer.savedBaselineNone')}
-      </p>
     </>
   )
 }
 
-const SUBAGENTS_SHOWN = 20
-
-/** The subagent sessions folded into this row, most expensive first. */
 function SubagentBreakdown({ subagents }: { subagents: SessionRow[] }) {
-  const sorted = [...subagents].sort((a, b) => b.cost - a.cost)
-  const total = sorted.reduce((sum, entry) => sum + entry.cost, 0)
-  const rest = sorted.slice(SUBAGENTS_SHOWN)
+  const sorted = [...subagents].sort((a, b) => b.calls - a.calls)
   return (
     <details className="drawer-fold">
-      <summary>{t(`sessions.drawer.subagentsSummary.${sorted.length === 1 ? 'one' : 'other'}`, { count: sorted.length, amount: formatUsd(total) })}</summary>
+      <summary>{t('sessions.drawer.subagentsLabel')} · {formatCount(sorted.length, 'session')}</summary>
       <div className="drawer-fold-body">
-        <DrawerBreakdown
-          label={t('sessions.drawer.subagentsLabel')}
-          rows={sorted.slice(0, SUBAGENTS_SHOWN).map(entry => ({ key: entry.sessionId, label: entry.title || entry.sessionId, cost: entry.cost }))}
-          caption={rest.length > 0 ? t('sessions.drawer.subagentsMore', { count: rest.length, amount: formatUsd(rest.reduce((sum, entry) => sum + entry.cost, 0)) }) : undefined}
-        />
+        {sorted.map(entry => (
+          <div className="drawer-breakdown-row" key={entry.sessionId}>
+            <span className="drawer-breakdown-label" title={entry.title || entry.sessionId}>{entry.title || entry.sessionId}</span>
+            <span>{formatCount(entry.calls, 'call')}</span>
+            <span>{formatCompact(entry.inputTokens + entry.outputTokens)} {t('sessions.summary.tokens')}</span>
+          </div>
+        ))}
       </div>
     </details>
   )
 }
 
-function formatRatio(ratio: number): string {
-  return (ratio >= 10 ? Math.round(ratio) : Math.round(ratio * 10) / 10).toLocaleString('en-US')
-}
-
-function branchPrLabel({ branches, prs }: { branches: BreakdownRow[]; prs: BreakdownRow[] }): string | null {
+function branchPrLabel({ branches, prs }: Pick<Breakdowns, 'branches' | 'prs'>): string | null {
   const parts: string[] = []
-  // A lone `main` with no PRs is every session's default: nothing to unfold.
   if (branches.length > 0 && !(branches.length === 1 && branches[0]!.label === 'main' && prs.length === 0)) {
-    const named = branches.slice(0, 2).map(entry => entry.label).join(', ')
-    parts.push(branches.length > 2 ? t('sessions.drawer.branchesMoreList', { named, count: branches.length - 2 }) : named)
+    parts.push(branches.slice(0, 2).map(entry => entry.label).join(', '))
   }
   if (prs.length > 0) parts.push(t(prs.length === 1 ? 'sessions.drawer.prCount.one' : 'sessions.drawer.prCount.other', { count: prs.length }))
   return parts.length > 0 ? parts.join(', ') : null
 }
 
-type BreakdownRow = { key: string; label: string; cost: number; approx?: boolean; url?: string }
-
-function buildBreakdowns(row: SessionDrillRow): {
-  models: BreakdownRow[]
-  categories: BreakdownRow[]
-  branches: BreakdownRow[]
-  days: BreakdownRow[]
-  prs: BreakdownRow[]
-  unattributedPrCost: number
-} {
+function buildBreakdowns(row: SessionDrillRow): Breakdowns {
   const models = new Map<string, number>()
   const categories = new Map<string, number>()
   const branches = new Map<string, number>()
   const days = new Map<string, number>()
-  const prs = new Map<string, { cost: number; approx: boolean }>()
-  let unattributedPrCost = 0
-  const segments = row.contributions?.segments ?? []
+  const prs = new Map<string, number>()
+  const segments: ContributionSegment[] = row.contributions?.segments ?? []
+
   for (const segment of segments) {
-    for (const [model, cost] of Object.entries(segment.models)) {
-      if (cost === 0) continue
-      models.set(model, (models.get(model) ?? 0) + cost)
+    for (const [model, usage] of Object.entries(segment.modelUsage ?? {})) {
+      models.set(model, (models.get(model) ?? 0) + usage.calls)
     }
-    if (segment.category && segment.cost > 0) categories.set(segment.category, (categories.get(segment.category) ?? 0) + segment.cost)
-    if (segment.branch && segment.cost > 0) branches.set(segment.branch, (branches.get(segment.branch) ?? 0) + segment.cost)
-    if (segment.day && segment.cost > 0) days.set(segment.day, (days.get(segment.day) ?? 0) + segment.cost)
-    if (segment.prs.length === 0) {
-      unattributedPrCost += segment.cost
-    } else {
-      const share = 1 / segment.prs.length
-      for (const url of segment.prs) {
-        const entry = prs.get(url) ?? { cost: 0, approx: false }
-        entry.cost += segment.cost * share
-        entry.approx = entry.approx || segment.approx === true
-        prs.set(url, entry)
-      }
-    }
+    if (segment.category) categories.set(segment.category, (categories.get(segment.category) ?? 0) + segment.calls)
+    if (segment.branch) branches.set(segment.branch, (branches.get(segment.branch) ?? 0) + segment.calls)
+    if (segment.day) days.set(segment.day, (days.get(segment.day) ?? 0) + segment.calls)
+    const share = segment.prs.length > 0 ? segment.calls / segment.prs.length : 0
+    for (const url of segment.prs) prs.set(url, (prs.get(url) ?? 0) + share)
   }
-  const toRows = (map: Map<string, number>): BreakdownRow[] =>
-    [...map.entries()]
-      .map(([key, cost]) => ({ key, label: key, cost }))
-      .sort((a, b) => b.cost - a.cost)
-  return {
-    models: toRows(models).map(entry => ({ ...entry, label: entry.key === '' ? t('sessions.drawer.unknownModel') : entry.key })),
-    categories: toRows(categories),
-    branches: toRows(branches).map(entry => ({ ...entry, label: entry.key })),
-    days: toRows(days),
-    prs: [...prs.entries()]
-      .map(([url, entry]) => ({ key: url, label: prLabel(url), cost: entry.cost, approx: entry.approx || undefined, url }))
-      .sort((a, b) => b.cost - a.cost),
-    unattributedPrCost,
+
+  const rows = (values: Map<string, number>, display = (key: string) => key): UsageRow[] =>
+    [...values.entries()]
+      .map(([key, count]) => ({ key, label: display(key), count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+
+  const modelRows = rows(models, key => key === '' ? t('sessions.drawer.unknownModel') : key)
+  if (modelRows.length === 0) {
+    for (const model of row.models) modelRows.push({ key: model, label: model, count: 0 })
   }
+  const prRows = rows(prs, prLabel).map(entry => ({ ...entry, url: entry.key }))
+  return { models: modelRows, categories: rows(categories), branches: rows(branches), days: rows(days), prs: prRows }
 }
 
-/** Short `owner/repo#123` form for GitHub URLs, else the URL itself — the same
- *  rule the by-PR report uses for labels. */
 function prLabel(url: string): string {
   const match = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/.exec(url)
   return match ? `${match[1]}/${match[2]}#${match[3]}` : url
 }
 
-function DrawerBreakdown({ label, rows, caption, link = false }: {
-  label: string
-  rows: BreakdownRow[]
-  caption?: string
-  link?: boolean
-}) {
+function DrawerBreakdown({ label, rows, link = false }: { label: string; rows: UsageRow[]; link?: boolean }) {
   if (rows.length === 0) return null
-  const max = rows[0]!.cost
+  const max = Math.max(...rows.map(row => row.count), 0)
   return (
     <div className="drawer-breakdown" role="group" aria-label={t('sessions.drawer.breakdownAriaLabel', { label })}>
       <div className="drawer-breakdown-head">{label}</div>
       {rows.map(entry => (
         <div className="drawer-breakdown-row" key={entry.key}>
           <span className="drawer-breakdown-label" title={entry.url ?? entry.label}>{entry.label}</span>
-          <div className="drawer-breakdown-bar" aria-hidden="true"><span style={{ width: `${max > 0 ? entry.cost / max * 100 : 0}%` }} /></div>
+          <div className="drawer-breakdown-bar" aria-hidden="true"><span style={{ width: `${max > 0 ? entry.count / max * 100 : 0}%` }} /></div>
           {link && entry.url
-            ? (
-                <a
-                  className="drawer-breakdown-cost drawer-link"
-                  href={entry.url}
-                  onClick={event => {
-                    event.preventDefault()
-                    void codeburn.openExternal(entry.url!)
-                  }}
-                >
-                  {entry.approx ? '~' : ''}{formatUsd(entry.cost)}
-                </a>
-              )
-            : <span className="drawer-breakdown-cost">{formatUsd(entry.cost)}</span>}
+            ? <a className="drawer-breakdown-cost drawer-link" href={entry.url} onClick={event => { event.preventDefault(); void codeburn.openExternal(entry.url!) }}>{formatCount(Math.round(entry.count), 'call')}</a>
+            : <span className="drawer-breakdown-cost">{formatCount(Math.round(entry.count), 'call')}</span>}
         </div>
       ))}
-      {caption && <p className="drawer-caption">{caption}</p>}
     </div>
   )
 }

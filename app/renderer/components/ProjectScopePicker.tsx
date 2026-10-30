@@ -13,19 +13,19 @@ export type TransientProject = { name: string; path: string; label?: string }
 const ALL = ''
 const MAX_SHOWN = 100
 
-/** Projects the saved filter shows, costliest first. Only rows with an
+/** Projects the saved filter shows, most active first. Only rows with an
  *  absolute path, and the temporary-folders row: a bucket with no session cwd (an import, a provider's label
  *  fallback) reports its label as the path, and no rooted filter selects it.
- *  Rows that round to $0.00 are left out too, they would show nothing. */
+ *  Inactive rows are left out unless an existing filter still names them. */
 export function projectScopeOptions(projects: ProjectRow[], filter: ProjectFilter): Array<DropdownOption & { name: string }> {
   const byPath = new Map<string, ProjectRow>()
   for (const project of projects) {
     if ((!isRooted(project.path) && !project.temporary) || !projectVisible(project, filter)) continue
     const path = project.path.trim()
     const held = byPath.get(path)
-    if (!held || (held.cost ?? 0) < (project.cost ?? 0)) byPath.set(path, project)
+    if (!held || held.sessions < project.sessions) byPath.set(path, project)
   }
-  const rows = [...byPath].filter(([, project]) => Math.round((project.cost ?? 0) * 100) > 0).sort((a, b) => (b[1].cost ?? 0) - (a[1].cost ?? 0))
+  const rows = [...byPath].filter(([, project]) => project.sessions > 0).sort((a, b) => b[1].sessions - a[1].sessions)
   const labels = new Map<string, number>()
   for (const [path] of rows) {
     const label = shortenProjectPath(path, 2)

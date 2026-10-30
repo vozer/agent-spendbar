@@ -70,41 +70,7 @@ export function Compare({
   ready?: boolean
   onInvestigate?: (request: InvestigateRequest) => void
 }) {
-  const [mode, setMode] = useState<CompareMode>('classic')
-
-  if (mode === 'cohorts') {
-    return (
-      <div className="cmp-body">
-        <div className="cmp-picker" aria-label={t('compare.mode.ariaLabel')}>
-          <SegTabs
-            options={[
-              { value: 'classic', label: t('compare.mode.classic') },
-              { value: 'cohorts', label: t('compare.mode.cohorts') },
-            ]}
-            value={mode}
-            onChange={next => setMode(next as CompareMode)}
-          />
-        </div>
-        <CohortCompare period={period} provider={provider} range={range} refreshToken={refreshToken} ready={ready} onInvestigate={onInvestigate} />
-      </div>
-    )
-  }
-
-  return (
-    <div className="cmp-body">
-      <div className="cmp-picker" aria-label={t('compare.mode.ariaLabel')}>
-        <SegTabs
-          options={[
-            { value: 'classic', label: t('compare.mode.classic') },
-            { value: 'cohorts', label: t('compare.mode.cohorts') },
-          ]}
-          value={mode}
-          onChange={next => setMode(next as CompareMode)}
-        />
-      </div>
-      <ClassicCompare period={period} provider={provider} range={range} refreshToken={refreshToken} ready={ready} />
-    </div>
-  )
+  return <div className="cmp-body"><ClassicCompare period={period} provider={provider} range={range} refreshToken={refreshToken} ready={ready} /></div>
 }
 
 function ClassicCompare({
@@ -238,8 +204,8 @@ function CompareReport({
     return <SectionSkeleton label={t('compare.classic.comparingModels')} rows={4} />
   }
 
-  const performance = report.data.metrics.filter(metric => metric.section === 'Performance')
-  const efficiency = report.data.metrics.filter(metric => metric.section === 'Efficiency')
+  const performance = report.data.metrics.filter(metric => metric.section === 'Performance' && metric.formatFn !== 'cost')
+  const efficiency = report.data.metrics.filter(metric => metric.section === 'Efficiency' && metric.formatFn !== 'cost')
 
   return (
     <div className="cmp-body">
@@ -269,13 +235,14 @@ function MetricCard({
   modelB: string
   showWinners?: boolean
 }) {
+  const usageRows = rows.filter(row => row.formatFn !== 'cost')
   return (
     <div className="panel cmp-card">
       <div className="cmp-head"><h3>{title}</h3></div>
       <div className="pbody">
       <div className="cmp-metrics">
         <MetricHeader modelA={modelA} modelB={modelB} />
-        {rows.map(row => {
+        {usageRows.map(row => {
           const winner = 'winner' in row ? row.winner : 'none'
           return (
             <div className="cmp-metric" key={row.label}>
@@ -354,7 +321,6 @@ function daysOfData(model: ModelStats): string {
 function ContextCard({ modelA, modelB }: { modelA: ModelStats; modelB: ModelStats }) {
   const rows: Array<[string, ReactNode, ReactNode]> = [
     [t('compare.classic.context.calls'), modelA.calls.toLocaleString(), modelB.calls.toLocaleString()],
-    [t('compare.classic.context.totalCost'), <Usd value={modelA.cost} tokens={tokensOf(modelA)} />, <Usd value={modelB.cost} tokens={tokensOf(modelB)} />],
     [t('compare.classic.context.inputTokens'), formatCompact(modelA.inputTokens), formatCompact(modelB.inputTokens)],
     [t('compare.classic.context.outputTokens'), formatCompact(modelA.outputTokens), formatCompact(modelB.outputTokens)],
     [t('compare.classic.context.editTurns'), modelA.editTurns.toLocaleString(), modelB.editTurns.toLocaleString()],
