@@ -7,7 +7,7 @@ struct MonthlyUsagePopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Monthly usage")
+                Text(L("Monthly usage"))
                     .font(.headline)
                 Text(monthLabel)
                     .font(.caption)
@@ -36,7 +36,7 @@ struct MonthlyUsagePopover: View {
                 }
             }
 
-            Text("Percent of monthly budget used. A tilde marks estimated or partial data.")
+            Text(L("Percent of monthly budget used. A tilde marks estimated or partial data."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }

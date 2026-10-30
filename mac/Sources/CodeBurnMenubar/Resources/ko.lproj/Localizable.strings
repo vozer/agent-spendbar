@@ -737,3 +737,5 @@
 "Downloads your own usage export with the Cursor app's login, at most once an hour." = "Cursor 앱의 로그인으로 내 사용량 내보내기를 다운로드합니다(최대 1시간에 1회).";
 "Turned off by CODEBURN_CURSOR_SYNC=0" = "CODEBURN_CURSOR_SYNC=0으로 꺼져 있음";
 "Couldn't save the setting: config.json is invalid or locked" = "설정을 저장할 수 없습니다. config.json이 잘못되었거나 잠겨 있습니다";
+"Monthly usage" = "월간 사용량";
+"Percent of monthly budget used. A tilde marks estimated or partial data." = "월간 예산 사용률입니다. 물결표는 추정값 또는 일부 데이터임을 나타냅니다.";

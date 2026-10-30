@@ -737,3 +737,5 @@
 "Downloads your own usage export with the Cursor app's login, at most once an hour." = "Télécharge votre propre export d'utilisation avec la connexion de l'app Cursor, au plus une fois par heure.";
 "Turned off by CODEBURN_CURSOR_SYNC=0" = "Désactivé par CODEBURN_CURSOR_SYNC=0";
 "Couldn't save the setting: config.json is invalid or locked" = "Impossible d'enregistrer le réglage : config.json est invalide ou verrouillé";
+"Monthly usage" = "Utilisation mensuelle";
+"Percent of monthly budget used. A tilde marks estimated or partial data." = "Pourcentage du budget mensuel utilisé. Le tilde indique une estimation ou des données partielles.";
