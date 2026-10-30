@@ -1512,9 +1512,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
 
         let menu = NSMenu()
 
-        // Glanceable "today" usage at the top as a single non-interactive (dimmed)
-        // row. A real .sectionHeader adds section padding (and pulls the actions
-        // into its group without a separator), so use a plain disabled item.
+        // Show the same monthly percentages as the status item.
         let usageItem = NSMenuItem(title: contextMenuUsageSummary(), action: nil, keyEquivalent: "")
         usageItem.isEnabled = false
         menu.addItem(usageItem)
@@ -1582,11 +1580,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         }
     }
 
-    /// One-line "today" summary for the context menu's usage row.
+    /// One-line monthly percentage summary for the context menu.
     private func contextMenuUsageSummary() -> String {
-        guard let current = store.todayPayload?.current else { return L("Today · no usage yet") }
-        let calls = current.calls == 1 ? L("1 call") : L("%lld calls", current.calls)
-        return L("Today · %1$@ · %2$@", current.cost.asCurrency(), calls)
+        L("Monthly usage") + " · " + monthlyBudgetItems().map { "\($0.label) \($0.percentage)" }.joined(separator: " · ")
     }
 
     private var settingsWindowController: NSWindowController?

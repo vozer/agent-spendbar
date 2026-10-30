@@ -369,11 +369,6 @@ private struct GeneralSettingsTab: View {
     @AppStorage(UsageRefreshCadence.defaultsKey)
     private var usageRefreshSeconds: Int = UsageRefreshCadence.default.rawValue
 
-    // Stored as the raw string so an unrecognised value (older build, manual
-    // `defaults write`) parses back to .terminal instead of failing to decode.
-    @AppStorage(PreferredTerminal.defaultsKey)
-    private var preferredTerminalRaw: String = PreferredTerminal.default.rawValue
-
     @AppStorage(UpdateNotificationPreference.defaultsKey)
     private var notifyAboutUpdates: Bool = true
 
@@ -451,22 +446,6 @@ private struct GeneralSettingsTab: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                 Toggle(L("Quota crossings (%1$lld%% and %2$lld%%)", 80, 100), isOn: $notifyAboutQuotaCrossings)
-            }
-
-            Section(L("Terminal")) {
-                Picker(L("Open commands in"), selection: Binding(
-                    get: { PreferredTerminal(rawValue: preferredTerminalRaw) ?? .default },
-                    set: { preferredTerminalRaw = $0.rawValue }
-                )) {
-                    ForEach(PreferredTerminal.allCases) { terminal in
-                        Text(terminal.isInstalled ? terminal.label : L("%@ (not installed)", terminal.label))
-                            .tag(terminal)
-                    }
-                }
-                .pickerStyle(.menu)
-                Text(L("Where Full Report and Optimize open. If the chosen app isn't installed CodeBurn falls back to Terminal; if that's missing too the command runs in the background. Only terminals that can script a command into a live window are listed."))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
             }
 
             PrivacySettingsSection()
