@@ -1368,7 +1368,7 @@ struct CapacityDockDetailView: View {
         if let today {
             let tokens = (today.inputTokens ?? 0) + (today.outputTokens ?? 0)
             Text(tokens > 0
-                 ? L("%@ tokens", tokens.asCompactTokens())
+                 ? L("%@ tokens", Double(tokens).asCompactTokens())
                  : L("%@ calls", today.calls.asThousandsSeparated()))
                 .font(.system(size: 11))
                 .monospacedDigit()
