@@ -14,13 +14,13 @@ CodeBurn supplies the provider readers and usage analytics under its MIT license
 
 ## Monthly percentages
 
-The menu bar keeps All, Codex, Claude, and Cursor tabs visible, including providers with no current-period activity. Percentages use the current calendar month and remain visible above 100%.
+The menu bar keeps All, Codex, Claude, and Cursor tabs visible, including providers with no current-period activity. Codex and Claude percentages use the current calendar month. Percentages remain visible above 100%.
 
 - **Codex** uses published credit rates and the budget saved by [Codex Spendbar](https://github.com/vozer/codex-spendbar). The local default is 7,800 credits. This is a personal comparison value, not an OpenAI account limit.
 - **Claude Code** uses local session data against a $100 monthly cap. Its percentage is estimated, not Claude's billed total.
-- **Cursor** combines Cursor and Cursor Agent data against a $100 monthly cap. It uses account usage data when available and marks local estimates with `~`.
+- **Cursor** uses the personal spending and limit from Cursor’s current billing cycle. Right-click the menu bar and choose **Connect Cursor usage** to grant Keychain access. Reconnect after restarting Spendbar. A `*` marks the last value as stale after a failed refresh. Other Cursor accounts use an estimated local percentage.
 
-The app marks estimates or partial data with `~`. An unavailable value means local usage data is missing. CodeBurn reads local provider data and does not upload prompts or source files.
+The app marks estimates or partial data with `~`. A dash means the relevant usage is unavailable. CodeBurn reads local provider data and does not upload prompts or source files.
 
 ## Install the macOS app
 

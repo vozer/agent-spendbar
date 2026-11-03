@@ -86,6 +86,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
     private var codexQuotaRefreshTask: Task<Bool, Never>?
     private var refreshLoopHeartbeatAt: Date = .distantPast
     private var providerSettingsObserver: NSObjectProtocol?
+    private let cursorSafeStorage = CursorSafeStorage()
+    private var cursorReading: CursorPersonalSpendService.Reading?
+    private var cursorScope: CursorAppSessionStore.PersonalSpendContext?
+    private var cursorReadingStale = false
+    private var cursorUsesEstimate = false
+    private var cursorRefreshTask: Task<Void, Never>?
+    private var cursorNextAttempt: Date = .distantPast
+    private var cursorRateLimitedUntil: Date = .distantPast
+    private var cursorConnectQueued = false
 
     func applicationWillTerminate(_ notification: Notification) {
         // Bounded by its own timeout, so a slow network can never hold up quit.
@@ -911,6 +920,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         // for hours (#647). Asked live rather than latched from
         // screensDidSleep, so a missed wake notification cannot strand it.
         if !forcePayload && CGDisplayIsAsleep(CGMainDisplayID()) != 0 { return }
+        refreshCursorPersonalSpend()
         let hadForceRefreshInFlight = forceRefreshTask != nil
         let clearedStaleForceRefresh = clearStaleForceRefreshIfNeeded()
         let clearedStaleStatusRefresh = clearStaleStatusPayloadRefreshIfNeeded()
@@ -1362,9 +1372,109 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         let budgetLabel = budgetItems.map(\.accessibilityLabel).joined(separator: ", ")
         button.setAccessibilityLabel(budgetLabel)
         let budgetSummary = budgetItems.map { "\($0.label) \($0.percentage)" }.joined(separator: " · ")
-        button.toolTip = L("Agent Spendbar · Monthly budget · %@", budgetSummary)
+        button.toolTip = L("Agent Spendbar · Monthly budget · %@", budgetSummary) + (cursorReadingStale ? " · Cursor * = stale" : "")
 
         persistBadgeStatusFile()
+    }
+
+    private func refreshCursorPersonalSpend(allowPrompt: Bool = false) {
+        if let reading = cursorReading, Date() >= reading.cycleEnd {
+            cursorReading = nil
+            cursorReadingStale = false
+            refreshStatusButton()
+        }
+        if cursorRefreshTask != nil {
+            if allowPrompt { cursorConnectQueued = true }
+            return
+        }
+        if Date() < cursorRateLimitedUntil {
+            if allowPrompt {
+                let alert = NSAlert()
+                alert.messageText = L("Cursor usage is temporarily rate limited")
+                alert.informativeText = L("Try connecting again later.")
+                alert.runModal()
+            }
+            return
+        }
+        guard allowPrompt || Date() >= cursorNextAttempt else { return }
+        cursorNextAttempt = Date().addingTimeInterval(TimeInterval(refreshIntervalSeconds))
+        let storage = cursorSafeStorage
+        cursorRefreshTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.cursorRefreshTask = nil
+                if self.cursorConnectQueued {
+                    self.cursorConnectQueued = false
+                    self.refreshCursorPersonalSpend(allowPrompt: true)
+                }
+            }
+            do {
+                guard let context = try await Task.detached(operation: {
+                    try CursorAppSessionStore().loadPersonalSpendContext()
+                }).value else {
+                    self.cursorReading = nil
+                    self.cursorScope = nil
+                    self.cursorUsesEstimate = true
+                    storage.clear()
+                    throw CursorPersonalSpendService.FetchError.invalidIdentity
+                }
+                if let previous = self.cursorScope,
+                   previous.authID != context.authID || previous.teamID != context.teamID {
+                    self.cursorReading = nil
+                    self.cursorReadingStale = false
+                    storage.clear()
+                }
+                self.cursorScope = context
+                self.cursorUsesEstimate = false
+                let token = try await Task.detached {
+                    try storage.unlock(context.storedToken, allowPrompt: allowPrompt)
+                }.value
+                let identity = try await CursorPersonalSpendService.loadIdentity(accessToken: token, teamID: context.teamID, expectedAuthID: context.authID)
+                guard identity.authID == context.authID else { throw CursorPersonalSpendService.FetchError.invalidIdentity }
+                let reading = try await CursorPersonalSpendService.refresh(identity: identity)
+                if reading.onDemandOnly {
+                    self.cursorReading = nil
+                    self.cursorReadingStale = false
+                    self.cursorUsesEstimate = true
+                    self.refreshStatusButton()
+                    return
+                }
+                let latest = try await Task.detached { try CursorAppSessionStore().loadPersonalSpendContext() }.value
+                guard latest == context else {
+                    self.cursorReading = nil
+                    self.cursorScope = nil
+                    throw CursorPersonalSpendService.FetchError.invalidIdentity
+                }
+                self.cursorReading = reading
+                self.cursorReadingStale = false
+            } catch {
+                if case CursorPersonalSpendService.FetchError.invalidIdentity = error {
+                    self.cursorReading = nil
+                    self.cursorScope = nil
+                    storage.clear()
+                }
+                self.cursorReadingStale = self.cursorReading != nil
+                if let reading = self.cursorReading, Date() >= reading.cycleEnd {
+                    self.cursorReading = nil
+                    self.cursorReadingStale = false
+                }
+                if case CursorPersonalSpendService.FetchError.rateLimited(let seconds) = error {
+                    self.cursorRateLimitedUntil = Date().addingTimeInterval(max(TimeInterval(refreshIntervalSeconds), seconds))
+                    self.cursorNextAttempt = self.cursorRateLimitedUntil
+                }
+                if allowPrompt {
+                    let alert = NSAlert()
+                    alert.messageText = L("Could not connect Cursor usage")
+                    alert.informativeText = L("Check Cursor and Keychain access, then try again.")
+                    alert.runModal()
+                }
+            }
+            self.refreshStatusButton()
+        }
+    }
+
+    @objc private func connectCursorPersonalSpend() {
+        refreshCursorPersonalSpend(allowPrompt: true)
     }
 
     private func monthlyBudgetItems() -> [MenubarBudgetItem] {
@@ -1373,7 +1483,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             current: payload?.current,
             codexBudget: MenubarBudgetStatus.codexBudget(),
             unavailable: payload == nil,
-            estimatedFromPartial: payload?.stale == true || payload?.hydration?.complete == false
+            estimatedFromPartial: payload?.stale == true || payload?.hydration?.complete == false,
+            cursorPercent: cursorReading.map { Double($0.spentCents) / Double($0.limitCents) * 100 },
+            cursorStale: cursorReadingStale,
+            useCursorEstimate: cursorUsesEstimate
         )
     }
 
@@ -1508,6 +1621,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         dockSettingsItem.target = self
         dockSettingsItem.image = NSImage(systemSymbolName: "rectangle.trailinghalf.inset.filled.arrow.trailing", accessibilityDescription: "Capacity Dock")
         menu.addItem(dockSettingsItem)
+
+        let connectCursor = NSMenuItem(title: L("Connect Cursor usage…"), action: #selector(connectCursorPersonalSpend), keyEquivalent: "")
+        connectCursor.target = self
+        menu.addItem(connectCursor)
 
         let refreshNow = NSMenuItem(title: L("Refresh Now"), action: #selector(refreshNowAction), keyEquivalent: "")
         refreshNow.target = self

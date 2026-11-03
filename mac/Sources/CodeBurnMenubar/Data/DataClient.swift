@@ -63,6 +63,7 @@ struct DataClient {
                       scope: MenubarScope = .local,
                       claudeConfigSourceId: String? = nil,
                       bypassResident: Bool = false,
+                      preferBundledResident: Bool = false,
                       qualityOfService: QualityOfService = .userInitiated) async throws -> MenubarPayload {
 #if DEBUG
         if let hook = await MainActor.run(body: { fetchHookForTesting }) {
@@ -81,6 +82,7 @@ struct DataClient {
         let result = try await runCLI(
             subcommand: subcommand,
             bypassResident: bypassResident,
+            preferBundledResident: preferBundledResident,
             qualityOfService: qualityOfService
         )
         guard result.exitCode == 0 else {
@@ -149,21 +151,26 @@ struct DataClient {
     /// Cold floor gate for the one-shot path. See `SpawnWarmth`.
     static let warmth = SpawnWarmth()
 
+    static func resident(preferBundledResident: Bool) -> ServeConnection {
+        preferBundledResident ? .budget : .shared
+    }
+
     private static func runCLI(
         subcommand: [String],
         bypassResident: Bool = false,
+        preferBundledResident: Bool = false,
         qualityOfService: QualityOfService = .userInitiated
     ) async throws -> ProcessResult {
         try await runCLI(
             subcommand: subcommand,
             bypassResident: bypassResident,
             serveRequest: { args in
-                try await ServeConnection.shared.request(args: args)
+                try await resident(preferBundledResident: preferBundledResident).request(args: args)
             },
             spawnFallback: {
                 await spawnLimiter.acquire()
                 defer { Task { await spawnLimiter.release() } }
-                let process = bypassResident
+                let process = bypassResident || preferBundledResident
                     ? CodeburnCLI.makeBundledProcess(subcommand: subcommand, qualityOfService: qualityOfService)
                     : CodeburnCLI.makeProcess(subcommand: subcommand, qualityOfService: qualityOfService)
                 // Heartbeats for the no-output watchdog: a multi-minute parse

@@ -5,11 +5,12 @@ struct MenubarBudgetItem: Equatable, Sendable {
     let label: String
     let percentage: String
     let estimated: Bool
+    var stale: Bool = false
 
     var accessibilityLabel: String {
         guard percentage != "—" else { return "\(label): monthly usage unavailable" }
         let value = estimated ? String(percentage.dropFirst()) : percentage
-        return "\(label): \(estimated ? "estimated " : "")\(value) of monthly budget used"
+        return "\(label): \(stale ? "stale " : "")\(estimated ? "estimated " : "")\(value) of monthly budget used"
     }
 }
 
@@ -45,7 +46,10 @@ enum MenubarBudgetStatus {
         current: CurrentBlock?,
         codexBudget: Double?,
         unavailable: Bool,
-        estimatedFromPartial: Bool = false
+        estimatedFromPartial: Bool = false,
+        cursorPercent: Double? = nil,
+        cursorStale: Bool = false,
+        useCursorEstimate: Bool = false
     ) -> [MenubarBudgetItem] {
         let providers = current?.providerDetails ?? []
         let codex = providers.first { $0.id == "codex" }
@@ -58,9 +62,17 @@ enum MenubarBudgetStatus {
                  incomplete: unavailable),
             item("claude", "Claude", used: claude?.cost, budget: 100,
                  estimated: true, incomplete: unavailable),
-            item("cursor", "Cursor", used: cursor.isEmpty ? nil : cursor.reduce(0) { $0 + $1.cost }, budget: 100,
-                 estimated: estimatedFromPartial || cursor.contains { ($0.estimatedCostUSD ?? 0) > 0 }, incomplete: unavailable),
+            useCursorEstimate
+                ? item("cursor", "Cursor", used: cursor.isEmpty ? nil : cursor.reduce(0) { $0 + $1.cost }, budget: 100,
+                       estimated: true, incomplete: unavailable)
+                : cursorItem(percent: cursorPercent, stale: cursorStale),
         ]
+    }
+
+    private static func cursorItem(percent: Double?, stale: Bool) -> MenubarBudgetItem {
+        let value = percentage(used: percent, budget: 100, estimated: false)
+        let isStale = stale && value != "—"
+        return MenubarBudgetItem(id: "cursor", label: "Cursor", percentage: value + (isStale ? "*" : ""), estimated: false, stale: isStale)
     }
 
     private static func item(

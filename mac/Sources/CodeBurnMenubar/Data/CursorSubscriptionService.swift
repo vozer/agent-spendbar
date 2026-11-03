@@ -331,6 +331,26 @@ struct CursorAppSessionStore: Sendable {
         }
     }
 
+    struct PersonalSpendContext: Equatable, Sendable {
+        let storedToken: String
+        let authID: String
+        let teamID: Int
+    }
+
+    func loadPersonalSpendContext() throws -> PersonalSpendContext? {
+        guard let token = try loadAccessToken(), !token.isEmpty,
+              let authRaw = try value(for: "adminSettings.cachedAuthId", immutable: false),
+              let teamRaw = try value(for: "adminSettings.cachedTeamId", immutable: false),
+              let cachedTeamRaw = try value(for: "cursorAuth/cachedTeam", immutable: false),
+              let teamID = Int(teamRaw), teamID > 0,
+              let data = cachedTeamRaw.data(using: .utf8),
+              let cachedTeam = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              cachedTeam["teamId"] as? Int == teamID else { return nil }
+        let authID = (try? JSONDecoder().decode(String.self, from: Data(authRaw.utf8))) ?? authRaw
+        guard !authID.isEmpty else { return nil }
+        return PersonalSpendContext(storedToken: token, authID: authID, teamID: teamID)
+    }
+
     private func value(for key: String, immutable: Bool) throws -> String? {
         var database: OpaquePointer?
         let filename = immutable ? "\(databaseURL.absoluteURL.absoluteString)?immutable=1" : databaseURL.path

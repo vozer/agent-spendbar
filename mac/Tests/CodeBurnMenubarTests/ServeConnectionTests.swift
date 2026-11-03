@@ -1261,6 +1261,13 @@ struct ServeConnectionTests {
         #expect(await fallback.snapshot() == 1)
     }
 
+    @Test("monthly budgets select a separate bundled resident")
+    func monthlyBudgetUsesBundledResident() {
+        #expect(DataClient.resident(preferBundledResident: true) === ServeConnection.budget)
+        #expect(DataClient.resident(preferBundledResident: false) === ServeConnection.shared)
+        #expect(ServeOrphanReaper.budgetPidFileURL() != ServeOrphanReaper.pidFileURL())
+    }
+
     @Test("a verified-fresh request can bypass the resident worker")
     func verifiedFreshRequestBypassesResident() async throws {
         let resident = FallbackRecorder()

@@ -48,6 +48,23 @@ final class CursorQuotaTests: XCTestCase {
         XCTAssertEqual(loaded, token)
     }
 
+    func testPersonalSpendContextRejectsMismatchedTeam() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("cursor-context-\(UUID().uuidString)")
+        let url = root.appendingPathComponent("state.vscdb")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try Self.writeCursorDatabase(at: url, token: "synthetic-token")
+        var database: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &database), SQLITE_OK)
+        defer { sqlite3_close(database) }
+        let sql = #"INSERT INTO ItemTable VALUES ('adminSettings.cachedAuthId', 'auth0|test'), ('adminSettings.cachedTeamId', '7'), ('cursorAuth/cachedTeam', '{"teamId":7}')"#
+        XCTAssertEqual(sqlite3_exec(database, sql, nil, nil, nil), SQLITE_OK)
+        let store = CursorAppSessionStore(databaseURL: url)
+        XCTAssertEqual(try store.loadPersonalSpendContext()?.teamID, 7)
+        XCTAssertEqual(sqlite3_exec(database, "UPDATE ItemTable SET value = '8' WHERE key = 'adminSettings.cachedTeamId'", nil, nil, nil), SQLITE_OK)
+        XCTAssertNil(try store.loadPersonalSpendContext())
+    }
+
     func testExistingCursorAppSessionConnectsAndMapsMonthlyQuota() async throws {
         let recorder = RequestRecorder()
         let token = Self.syntheticJWT()

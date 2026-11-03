@@ -19,6 +19,10 @@ import Foundation
 ///   back; the next request respawns it lazily through `ensureStarted()`.
 actor ServeConnection {
     static let shared = ServeConnection()
+    static let budget = ServeConnection(
+        pidFile: ServeOrphanReaper.budgetPidFileURL(),
+        makeProcess: CodeburnCLI.makeBundledProcess
+    )
 
     typealias ProcessFactory = ([String], QualityOfService) -> Process
     typealias TimeoutSleep = @Sendable (UInt64) async throws -> Void
@@ -763,6 +767,12 @@ enum ServeOrphanReaper {
     static func pidFileURL() -> URL {
         URL(fileURLWithPath: CodeBurnCacheDirectory.resolve())
             .appendingPathComponent("menubar-serve.pid", isDirectory: false)
+    }
+
+    static func budgetPidFileURL() -> URL {
+        let suffix = CommandLine.arguments.contains(SingleInstanceGuard.keepBothFlag) ? "-\(getpid())" : ""
+        return URL(fileURLWithPath: CodeBurnCacheDirectory.resolve())
+            .appendingPathComponent("menubar-budget-serve\(suffix).pid", isDirectory: false)
     }
 
     static func record(at url: URL = pidFileURL(), pid: pid_t, command: String) {

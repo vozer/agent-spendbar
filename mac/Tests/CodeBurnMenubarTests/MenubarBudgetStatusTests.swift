@@ -39,8 +39,21 @@ struct MenubarBudgetStatusTests {
         let items = MenubarBudgetStatus.items(current: current, codexBudget: 7000, unavailable: false)
 
         #expect(items.map(\.id) == ["codex", "claude", "cursor"])
-        #expect(items.map(\.percentage) == ["~50%", "~25%", "~160%"])
+        #expect(items.map(\.percentage) == ["~50%", "~25%", "—"])
+        let fallback = MenubarBudgetStatus.items(current: current, codexBudget: 7000, unavailable: false, useCursorEstimate: true)
+        #expect(fallback[2].percentage == "~160%")
         #expect(MenubarBudgetStatus.items(current: current, codexBudget: 7000, unavailable: true).allSatisfy { $0.percentage == "—" })
+    }
+
+    @Test("shows the provider spending percentage and marks failed refreshes stale")
+    func cursorProviderReading() {
+        let fresh = MenubarBudgetStatus.items(current: nil, codexBudget: nil, unavailable: true, cursorPercent: 28.84)
+        #expect(fresh[2].percentage == "29%")
+        let stale = MenubarBudgetStatus.items(current: nil, codexBudget: nil, unavailable: true, cursorPercent: 28.84, cursorStale: true)
+        #expect(stale[2].percentage == "29%*")
+        #expect(stale[2].accessibilityLabel.contains("stale"))
+        let unavailable = MenubarBudgetStatus.items(current: nil, codexBudget: nil, unavailable: true)
+        #expect(unavailable[2].percentage == "—")
     }
 
     @Test("matches the reported 91 percent monthly Codex usage")
