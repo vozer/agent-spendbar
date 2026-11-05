@@ -1,0 +1,116 @@
+name: Dependabot security update
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: dependabot-security-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  classify:
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    outputs:
+      security_update: ${{ steps.metadata.outputs['alert-state'] == 'OPEN' && steps.metadata.outputs['ghsa-id'] != '' }}
+    steps:
+      - id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.WORKSPACE_SECURITY_READ_TOKEN }}
+          alert-lookup: true
+
+  test:
+    needs: classify
+    if: needs.classify.outputs.security_update == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.13.0'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test -- --reporter=default --reporter=json --outputFile.json=test-report.json
+      - name: Run cache-lock tests
+        run: |
+          timeout 90 npm run test:locks && exit 0
+          echo "::warning::cache-lock suite timed out; retrying once"
+          timeout 90 npm run test:locks
+      - name: Check dependency updates for unsafe assignments
+        run: |
+          python -m pip install semgrep
+          semgrep --config .semgrep/rules/no-bracket-assign-hot-paths.yml --strict src/providers/ src/parser.ts
+      - name: Test desktop app
+        working-directory: app
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - name: Test VS Code extension
+        working-directory: vscode
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run package
+      - name: Test VS Code webview bridge
+        working-directory: app
+        run: npx vitest run renderer/vscode renderer/i18n
+      - name: Smoke test VS Code
+        working-directory: vscode
+        run: xvfb-run -a npm run test:smoke
+
+  test-platforms:
+    needs: classify
+    if: needs.classify.outputs.security_update == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test -- --maxWorkers=3 --reporter=default --reporter=json --outputFile.json=test-report.json
+
+  merge:
+    needs: [classify, test, test-platforms]
+    if: needs.classify.outputs.security_update == 'true' && needs.test.result == 'success' && needs.test-platforms.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Merge the tested commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: gh api --method PUT "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/merge" --field merge_method=squash --field sha="$HEAD_SHA"
