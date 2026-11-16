@@ -45,7 +45,7 @@ function prFacts(pr: PrRow): string[] {
   const only = reviews?.length === 1 ? reviews[0]! : null
   if (only?.kind === 'you') facts.push(t('pullRequests.facts.reviewedByYou'))
   else if (only?.model) facts.push(t('pullRequests.facts.reviewedBy', { model: only.model }))
-  else if (reviews?.length) facts.push(t('pullRequests.facts.reviewRuns', { count: formatCount(reviews.length, 'review run') }))
+  else if (reviews?.length) facts.push(t('pullRequests.facts.reviewRuns', { count: reviews.length.toLocaleString(localeTag()) }))
   else if (reviews) facts.push(t('pullRequests.facts.noReview'))
   return facts
 }

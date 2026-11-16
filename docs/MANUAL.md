@@ -8,6 +8,8 @@ The menu bar keeps All, Codex, Claude, and Cursor tabs visible. A tab stays visi
 
 The monthly overview shows budget percentages, sessions, calls, tokens, and top models. Other screens show sessions, projects, models, plans, pull requests, and tools.
 
+Pull request activity labels are available in all supported app languages. Review counts show the number once.
+
 App screens show no currency amounts. Percentages can exceed 100%. A `~` marks estimated, stale, or partial data.
 
 ## Monthly percentages

@@ -70,6 +70,14 @@ describe('PullRequests', () => {
     openExternal.mockResolvedValue(undefined)
   })
 
+  it('labels multiple review runs once', async () => {
+    const review = { kind: 'agent' as const, label: 'review', model: null, costUSD: 0, at: '2026-07-01T10:00:00Z', evidence: 'reads-pr' as const }
+    const row = { ...SAMPLE.rows[0]!, reviewRuns: [review, review] }
+    getOverview.mockResolvedValue(makePayload({ ...SAMPLE, rows: [row] }))
+    render(<PullRequests period="lifetime" provider="all" />)
+    expect(await screen.findByText('2 review runs')).toBeInTheDocument()
+  })
+
   it('renders PR cards with linked labels, cost, activity, and a date span', async () => {
     getOverview.mockResolvedValue(makePayload(SAMPLE))
     render(<PullRequests period="lifetime" provider="all" />)
