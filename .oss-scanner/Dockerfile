@@ -16,14 +16,16 @@ USER node
 # CLI and web dashboard (npm run build also builds dash/)
 RUN npm ci && npm run build
 # Desktop app: Electron main process and renderer
-RUN cd app && npm ci && npm run build
+WORKDIR /src/app
+RUN npm ci && npm run build
 # VS Code extension: host, webview and the staged CLI
-RUN cd vscode && npm ci && npm run build
+WORKDIR /src/vscode
+RUN npm ci && npm run build
 # Windows app: web UI only
-RUN cd windows && npm ci && npm run build
+WORKDIR /src/windows
+RUN npm ci && npm run build
+WORKDIR /src
 
 RUN npm test -- --maxWorkers=4 || echo "WARNING: CLI tests reported failures"
 RUN (cd app && npm test) || echo "WARNING: desktop tests reported failures"
 RUN (cd vscode && npm test) || echo "WARNING: VS Code extension tests reported failures"
-
-USER root
