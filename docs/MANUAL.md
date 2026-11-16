@@ -39,6 +39,8 @@ Apple keeps **Open Anyway** available for about one hour after you try launching
 
 The app is ad-hoc signed in CI. macOS may ask for local data access again after an update.
 
+Desktop update checks and release downloads use the Agent Spendbar repository.
+
 ## Developer setup: build from source
 
 Install Node.js 22.13 or newer and Swift 6. Build the local CLI before starting the app.

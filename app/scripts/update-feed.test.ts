@@ -33,7 +33,7 @@ function run(feed: string, assets: string[], tag = 'desktop-v1.2.3') {
 describe('update-feed', () => {
   it('points every file at the tagged release and leaves hashes alone', () => {
     const result = run(FEED, ['CodeBurn-1.2.3-arm64-mac.zip', 'CodeBurn-1.2.3-mac.zip'])
-    const base = 'https://github.com/getagentseal/codeburn/releases/download/desktop-v1.2.3'
+    const base = 'https://github.com/vozer/agent-spendbar/releases/download/desktop-v1.2.3'
     expect(result.status).toBe(0)
     expect(result.feed).toContain(`  - url: ${base}/CodeBurn-1.2.3-arm64-mac.zip\n    sha512: abc==`)
     expect(result.feed).toContain(`  - url: ${base}/CodeBurn-1.2.3-mac.zip`)

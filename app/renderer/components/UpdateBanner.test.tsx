@@ -50,7 +50,7 @@ describe('UpdateBanner', () => {
     expect(banner).toHaveTextContent('Update available: CodeBurn 0.9.17')
 
     fireEvent.click(screen.getByRole('button', { name: 'Download' }))
-    expect(mocks.openExternal).toHaveBeenCalledWith('https://github.com/getagentseal/codeburn/releases/tag/desktop-v0.9.17')
+    expect(mocks.openExternal).toHaveBeenCalledWith('https://github.com/vozer/agent-spendbar/releases/tag/desktop-v0.9.17')
   })
 
   it('one click: Update downloads, then shows the restart while the app restarts on its own', async () => {
