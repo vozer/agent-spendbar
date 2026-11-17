@@ -56,21 +56,23 @@ const env = {
   XDG_DATA_HOME: join(home, '.local', 'share'),
   CODEBURN_APP_FILTER: '',
 }
-const costOf = (...extra) => {
+const usageOf = (...extra) => {
   const out = execFileSync(process.execPath, [launch, 'status', '--format', 'menubar-json', '--period', 'today', '--no-optimize', ...extra], { env, encoding: 'utf8' })
-  return JSON.parse(out).current.cost
+  return JSON.parse(out).current
 }
-const usd = (n) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-const today = costOf()
-const workspaceToday = costOf(`--project=${workspace}`)
-if (!(today > workspaceToday && workspaceToday > 0)) throw new Error(`smoke: fixture costs look wrong (all ${today}, workspace ${workspaceToday})`)
+const today = usageOf()
+const workspaceToday = usageOf(`--project=${workspace}`)
+if (today.sessions !== 2 || today.calls !== 2 || today.inputTokens + today.outputTokens !== 84_000 ||
+    workspaceToday.sessions !== 1 || workspaceToday.calls !== 1 || workspaceToday.inputTokens + workspaceToday.outputTokens !== 24_000) {
+  throw new Error('smoke: fixture usage counts look wrong')
+}
 
 const out = join(tmp, 'results.json')
 const testEnv = {
   ...env,
   CODEBURN_SMOKE_OUT: out,
-  CODEBURN_SMOKE_TODAY_LINE: `Today: ${usd(today)}`,
-  CODEBURN_SMOKE_WORKSPACE_LINE: `${basename(workspace)}: ${usd(workspaceToday)}`,
+  CODEBURN_SMOKE_TODAY_LINE: 'Today: 2 sessions · 2 calls · 84K tokens',
+  CODEBURN_SMOKE_WORKSPACE_LINE: `${basename(workspace)} today: 1 session · 1 call · 24K tokens`,
 }
 const launchArgs = [
   workspace,

@@ -127,8 +127,8 @@ describe('Compare', () => {
     expect(screen.getByText('Efficiency')).toBeInTheDocument()
     expect(screen.getByText('Context')).toBeInTheDocument()
     expect(screen.getByText('71%')).toHaveClass('cmp-best')
-    expect(screen.getByText('$0.03')).toHaveClass('cmp-best')
-    expect(screen.getByText('$331.20')).toBeInTheDocument()
+    expect(screen.queryByText('$0.03')).not.toBeInTheDocument()
+    expect(screen.queryByText('$331.20')).not.toBeInTheDocument()
     expect(screen.getByText('152.6M')).toBeInTheDocument()
     expect(screen.getByText('9.6M')).toBeInTheDocument()
 
