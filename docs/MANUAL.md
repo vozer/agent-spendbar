@@ -12,6 +12,8 @@ Pull request activity labels are available in all supported app languages. Revie
 
 App screens show no currency amounts. Percentages can exceed 100%. A `~` marks estimated, stale, or partial data.
 
+The VS Code status bar shows call counts and can include the highest provider quota.
+
 ## Monthly percentages
 
 - **Codex** uses the saved Codex Spendbar budget. The default is 7,800 credits. This is a personal comparison value, not an OpenAI limit.
