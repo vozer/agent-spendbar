@@ -44,7 +44,7 @@ describe('Sidebar', () => {
     setPlatform(platform)
     const { container } = render(<Sidebar active="overview" onNavigate={() => {}} />)
     const labels = [...container.querySelectorAll('.ni')].map(item => item.textContent)
-    expect(labels).toEqual(['Overview', 'Sessions', 'Pull requests', 'Spend', 'Models', 'Optimize', 'Compare', 'Compare periods', 'Plans', 'Plugins', 'Settings'])
+    expect(labels).toEqual(['Overview', 'Sessions', 'Pull requests', 'Models', 'Compare', 'Compare periods', 'Plans', 'Plugins', 'Settings'])
     const tip = (label: string) => [...container.querySelectorAll('.ni')].find(item => item.textContent === label)?.getAttribute('title')
     expect(tip('Sessions')).toBe(`Sessions ${mod}2`)
     expect(tip('Pull requests')).toBe(`Pull requests ${mod}3`)
@@ -55,8 +55,8 @@ describe('Sidebar', () => {
   it('calls onNavigate with the section id when a nav item is clicked', () => {
     const onNavigate = vi.fn()
     render(<Sidebar active="overview" onNavigate={onNavigate} />)
-    fireEvent.click(screen.getByRole('button', { name: /Spend/ }))
-    expect(onNavigate).toHaveBeenCalledWith('spend')
+    fireEvent.click(screen.getByRole('button', { name: /Models/ }))
+    expect(onNavigate).toHaveBeenCalledWith('models')
   })
 
   it('marks the active item with the "on" class', () => {
@@ -69,7 +69,7 @@ describe('Sidebar', () => {
     const { container } = render(<Sidebar active="overview" onNavigate={() => {}} />)
     const mark = container.querySelector('.app b')
     expect(mark).toHaveClass('flame-text')
-    expect(mark).toHaveTextContent('CodeBurn')
+    expect(mark).toHaveTextContent('Agent Spendbar')
     expect(container.querySelector('.app img')).toBeNull()
   })
 
@@ -83,12 +83,12 @@ describe('Sidebar', () => {
     const { container } = render(<Sidebar active="overview" onNavigate={() => {}} />)
 
     expect(container.querySelector('.ni .k')).toBeNull()
-    const spend = [...container.querySelectorAll('.ni')].find(item => item.textContent === 'Spend')
-    expect(spend).toHaveAttribute('title', 'Spend ⌘4')
-    expect(spend).toHaveAttribute('data-tip', 'Spend ⌘4')
+    const models = [...container.querySelectorAll('.ni')].find(item => item.textContent === 'Models')
+    expect(models).toHaveAttribute('title', 'Models ⌘6')
+    expect(models).toHaveAttribute('data-tip', 'Models ⌘6')
   })
 
-  it('carries About and the version in the corner, with the links in the modal', async () => {
+  it('carries About and the version in the corner, with the repository link in the modal', async () => {
     setPlatform('darwin')
     const { container } = render(<Sidebar active="overview" onNavigate={() => {}} />)
 
@@ -97,8 +97,7 @@ describe('Sidebar', () => {
     expect(container.querySelector('.foot .social')).toBeNull()
 
     fireEvent.click(about)
-    expect(await screen.findByRole('link', { name: /GitHub/ })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /LinkedIn/ })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: /GitHub/ })).toHaveAttribute('href', 'https://github.com/vozer/agent-spendbar')
   })
 
   it('collapses to a rail, remembers it, and still navigates by icon', () => {
@@ -112,8 +111,8 @@ describe('Sidebar', () => {
     expect(localStorage.getItem('codeburn.sidebarCollapsed')).toBe('1')
 
     // The label never leaves the DOM, so the row keeps its name on the rail.
-    fireEvent.click(screen.getByRole('button', { name: /Spend/ }))
-    expect(onNavigate).toHaveBeenCalledWith('spend')
+    fireEvent.click(screen.getByRole('button', { name: /Models/ }))
+    expect(onNavigate).toHaveBeenCalledWith('models')
 
     unmount()
     render(<Sidebar active="overview" onNavigate={() => {}} />)

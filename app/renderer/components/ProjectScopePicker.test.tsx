@@ -19,8 +19,8 @@ const row = (path: string, cost: number, name = path.split('/').pop() ?? path): 
 const NO_FILTER = { project: [], exclude: [] }
 
 describe('projectScopeOptions', () => {
-  it('lists projects costliest first, keyed by their absolute path', () => {
-    const options = projectScopeOptions([row('/w/a', 1), row('/w/b', 5)], NO_FILTER)
+  it('lists projects by session count, keyed by their absolute path', () => {
+    const options = projectScopeOptions([{ ...row('/w/a', 50), sessions: 1 }, { ...row('/w/b', 1), sessions: 5 }], NO_FILTER)
     expect(options.map(option => option.value)).toEqual(['/w/b', '/w/a'])
   })
 
@@ -64,9 +64,9 @@ describe('projectScopeOptions', () => {
     expect(projectScopeOptions([repo, plain], NO_FILTER).map(option => option.title)).toEqual(['Includes deleted folders matched by folder name only', undefined])
   })
 
-  it('hides projects whose lifetime cost rounds to $0.00', () => {
-    const projects = [row('/w/zero', 0), row('/w/tiny', 0.004), row('/w/half', 0.005), row('/w/cent', 0.01)]
-    expect(projectScopeOptions(projects, NO_FILTER).map(option => option.value)).toEqual(['/w/cent', '/w/half'])
+  it('hides projects without sessions regardless of their cost', () => {
+    const projects = [{ ...row('/w/zero', 50), sessions: 0 }, { ...row('/w/active', 0), sessions: 1 }]
+    expect(projectScopeOptions(projects, NO_FILTER).map(option => option.value)).toEqual(['/w/active'])
   })
 
   it('shows the full path when two projects share a short name', () => {

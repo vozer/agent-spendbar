@@ -72,7 +72,7 @@ describe('MenuBarPane', () => {
   it('shows each of the tray app settings the desktop app does not already have', async () => {
     render(<MenuBarPane />)
 
-    expect(await selected('Tray metric')).toContain('Cost')
+    expect(await selected('Tray metric')).toContain('Tokens (up/down)')
     expect(await selected('Tray period')).toContain('Today')
     expect(await selected('Usage refresh')).toContain('Auto')
     expect(await selected('Quota refresh')).toContain('2 minutes')
@@ -147,7 +147,7 @@ describe('MenuBarPane', () => {
     await choose('Tray metric', 'Total tokens')
 
     await waitFor(() => expect(bridge.setTrayAppPref).toHaveBeenCalled())
-    expect(await selected('Tray metric')).toContain('Cost')
+    expect(await selected('Tray metric')).toContain('Tokens (up/down)')
   })
 })
 

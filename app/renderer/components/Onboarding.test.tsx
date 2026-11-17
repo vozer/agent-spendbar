@@ -25,21 +25,21 @@ describe('Onboarding', () => {
     next()
     expect(screen.getByText('Local-first by design.')).toBeInTheDocument()
     next()
-    expect(screen.getByText('Find the waste.')).toBeInTheDocument()
+    expect(screen.getByText('Understand usage.')).toBeInTheDocument()
     next()
-    expect(screen.getByText('Help improve CodeBurn')).toBeInTheDocument()
+    expect(screen.getByText('Help improve Agent Spendbar')).toBeInTheDocument()
     // Only the reached segments of the progress line are lit.
     expect(document.querySelectorAll('.onboard-seg.on')).toHaveLength(4)
     // Back returns to the previous screen.
     fireEvent.click(screen.getByRole('button', { name: 'Back' }))
-    expect(screen.getByText('Find the waste.')).toBeInTheDocument()
+    expect(screen.getByText('Understand usage.')).toBeInTheDocument()
   })
 
   it('skips straight to the consent screen, which is never skippable', () => {
     render(<Onboarding defaultEnabled onDone={() => {}} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
-    expect(screen.getByText('Help improve CodeBurn')).toBeInTheDocument()
+    expect(screen.getByText('Help improve Agent Spendbar')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Skip' })).not.toBeInTheDocument()
   })
 
@@ -51,7 +51,7 @@ describe('Onboarding', () => {
     expect(screen.getByText('Local-first by design.')).toBeInTheDocument()
 
     fireEvent.keyDown(window, { key: 'Escape' })
-    expect(screen.getByText('Help improve CodeBurn')).toBeInTheDocument()
+    expect(screen.getByText('Help improve Agent Spendbar')).toBeInTheDocument()
 
     // Enter on the consent screen finishes rather than advancing past it.
     fireEvent.keyDown(window, { key: 'Enter' })
@@ -80,7 +80,7 @@ describe('Onboarding', () => {
     next(); next(); next()
 
     fireEvent.click(screen.getByRole('button', { name: 'What data we collect' }))
-    expect(mocks.openExternal).toHaveBeenCalledWith('https://www.codeburn.app/telemetry')
+    expect(mocks.openExternal).toHaveBeenCalledWith('https://github.com/vozer/agent-spendbar/blob/main/docs/MANUAL.md#data-and-privacy')
 
     fireEvent.click(screen.getByRole('button', { name: 'Get started' }))
     expect(onDone).toHaveBeenCalledWith(true)
