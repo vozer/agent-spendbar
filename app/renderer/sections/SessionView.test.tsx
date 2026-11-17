@@ -180,16 +180,15 @@ describe('SessionView', () => {
     expect(screen.getByText('Session details')).toBeInTheDocument()
   })
 
-  it('replaces the list when a Claude session is clicked, and Back returns to it', async () => {
+  it('opens session details in a drawer and returns to the list when closed', async () => {
     const user = userEvent.setup()
     getSessions.mockResolvedValue([row])
     getSessionWhy.mockResolvedValue(payload)
     render(<Sessions period="30days" provider="all" />)
     await user.click(await screen.findByRole('button', { name: /Webhook retry/ }))
-    expect(await screen.findByText('Worth a look')).toBeInTheDocument()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Sessions' }))
-    await waitFor(() => expect(screen.queryByText('Worth a look')).not.toBeInTheDocument())
+    expect(await screen.findByRole('dialog', { name: 'Session details: Webhook retry' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Close session details' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(screen.getByRole('button', { name: /Webhook retry/ })).toBeInTheDocument()
   })
 })
