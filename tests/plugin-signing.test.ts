@@ -78,6 +78,22 @@ afterEach(async () => {
 })
 
 describe('plugin signature verification (9b)', () => {
+  it('rejects invalid or undeclared manifest capabilities at the trust boundary', () => {
+    const invalidCommand = parsePluginManifest({
+      ...validManifest(),
+      capabilities: { commands: ['read private data'] },
+    }, 'fixture/codeburn-plugin.json')
+    expect(invalidCommand.ok).toBe(false)
+    if (!invalidCommand.ok) expect(invalidCommand.reason).toContain('capabilities.commands.0')
+
+    const undeclaredField = parsePluginManifest({
+      ...validManifest(),
+      capabilities: { ...validManifest().capabilities, secrets: ['unexpected'] },
+    }, 'fixture/codeburn-plugin.json')
+    expect(undeclaredField.ok).toBe(false)
+    if (!undeclaredField.ok) expect(undeclaredField.reason).toContain('capabilities')
+  })
+
   it('keygen -> sign -> verify ok round trip with ephemeral key', async () => {
     const { publicKeyBase64, privateKeyPem } = await generateTestKeyPair()
     const keyId = '12345678'

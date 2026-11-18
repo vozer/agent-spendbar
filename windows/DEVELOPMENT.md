@@ -46,6 +46,8 @@ winget install Microsoft.EdgeWebView2Runtime
 # Microsoft C++ Build Tools (ships with Visual Studio Installer; pick "Desktop development with C++")
 ```
 
+The Windows tray build requires Rust 1.90 or newer. Updater 2.14.1 requires Tauri 2.12 and ZIP 9, which set this minimum. Check `cargo clippy`, `cargo test`, and the Windows release-build smoke in CI after dependency changes.
+
 ## Prerequisites (macOS / Linux, dev only)
 
 Tauri builds on macOS and Linux for inner-loop UI iteration. The shipping macOS product is the

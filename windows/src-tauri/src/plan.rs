@@ -318,7 +318,7 @@ fn wsl_homes(base: &Path) -> Vec<PathBuf> {
 #[cfg_attr(not(windows), allow(dead_code))]
 fn parse_wsl_distros(raw: &[u8]) -> Vec<String> {
     let text = if raw.contains(&0) {
-        let units: Vec<u16> = raw.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+        let units: Vec<u16> = raw.as_chunks::<2>().0.iter().map(|c| u16::from_le_bytes(*c)).collect();
         String::from_utf16_lossy(&units)
     } else {
         String::from_utf8_lossy(raw).into_owned()

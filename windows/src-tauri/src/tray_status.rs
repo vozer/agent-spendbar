@@ -67,7 +67,7 @@ pub fn tray_icon(tint: Option<[u8; 3]>) -> Result<Image<'static>> {
     let (width, height) = (image.width(), image.height());
     let mut rgba = image.rgba().to_vec();
     if let Some(color) = tint {
-        for pixel in rgba.chunks_exact_mut(4) {
+        for pixel in rgba.as_chunks_mut::<4>().0 {
             if pixel[3] == 0 {
                 continue;
             }
@@ -392,7 +392,9 @@ mod tests {
         assert!(
             tinted
                 .rgba()
-                .chunks_exact(4)
+                .as_chunks::<4>()
+                .0
+                .iter()
                 .filter(|p| p[3] > 0)
                 .all(|p| p[0] == 0xFF && p[1] == 0x3B && p[2] == 0x30),
             "every visible pixel takes the tint"

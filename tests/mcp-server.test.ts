@@ -46,6 +46,17 @@ describe('mcp server', () => {
     const res = await client.callTool({ name: 'get_usage', arguments: { period: 'today', by: 'project', include_project_names: true } })
     expect(JSON.stringify(res)).toContain('real-repo')
   })
+  it('rejects invalid tool arguments before reading local data', async () => {
+    let aggregateCalled = false
+    const client = await connect(async () => {
+      aggregateCalled = true
+      return fakePayload()
+    })
+    const response = await client.callTool({ name: 'get_usage', arguments: { period: 'two_years' } })
+    expect(response.isError).toBe(true)
+    expect(JSON.stringify(response)).toContain('Input validation error')
+    expect(aggregateCalled).toBe(false)
+  })
   it('empty data returns a friendly message, not a zero table', async () => {
     const client = await connect(async () => fakePayload(0))
     const res = await client.callTool({ name: 'get_usage', arguments: { period: 'today' } })

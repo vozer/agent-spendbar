@@ -22,7 +22,7 @@
     "package:vscode": "npm --prefix vscode run package",
     "dev": "node --no-deprecation --import tsx src/cli.ts",
     "test": "vitest run tests --exclude \"tests/cache-refresh-lock*\"",
-    "test:locks": "vitest run tests/cache-refresh-lock.test.ts tests/cache-refresh-lock-corrupt-body.test.ts tests/cache-refresh-lock-process.test.ts tests/cache-refresh-lock-status-snapshot.test.ts --poolOptions.forks.singleFork=true",
+    "test:locks": "vitest run tests/cache-refresh-lock.test.ts tests/cache-refresh-lock-corrupt-body.test.ts tests/cache-refresh-lock-process.test.ts tests/cache-refresh-lock-status-snapshot.test.ts --pool=forks --maxWorkers=1 --no-file-parallelism",
     "test:watch": "vitest tests --exclude \"tests/cache-refresh-lock*\"",
     "verify:upgrade": "node scripts/upgrade-path/run.mjs",
     "perf:fixture": "node scripts/perf/gen-fixture.mjs",
@@ -71,7 +71,7 @@
     "selfsigned": "^5.5.0",
     "strip-ansi": "^7.2.0",
     "undici": "^7.27.2",
-    "zod": "^3.25.76"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.19.17",
@@ -81,6 +81,9 @@
     "tsup": "^8.4.0",
     "tsx": "^4.19.0",
     "typescript": "^5.8.0",
-    "vitest": "^3.1.0"
+    "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "esbuild": "0.28.2"
   }
 }

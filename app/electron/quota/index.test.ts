@@ -7,18 +7,20 @@ const quota = (provider: ProviderName): QuotaProvider => ({
   provider, connection: 'connected', primary: null, details: [], planLabel: null, footerLines: [],
 })
 
+type QuotaFetcherOptions = { signal: AbortSignal; allowKeychain: boolean }
+
 // Every construction stubs all eight fetchers: a missing dep falls back to the
 // real fetcher, which would touch disk or the network inside a test. Grok Bot's
 // install check is stubbed too, so the row does not depend on the host machine.
 const noopFetchers = () => ({
-  claude: vi.fn(async () => ({ quota: quota('claude') })),
-  codex: vi.fn(async () => ({ quota: quota('codex') })),
-  gemini: vi.fn(async () => ({ quota: quota('gemini') })),
-  copilot: vi.fn(async () => ({ quota: quota('copilot') })),
-  antigravity: vi.fn(async () => ({ quota: quota('antigravity') })),
-  kimi: vi.fn(async () => ({ quota: quota('kimi') })),
-  zcode: vi.fn(async () => ({ quota: quota('zcode') })),
-  grokbot: vi.fn(async () => ({ quota: quota('grokbot') })),
+  claude: vi.fn(async (_options: QuotaFetcherOptions) => ({ quota: quota('claude') })),
+  codex: vi.fn(async (_options: QuotaFetcherOptions) => ({ quota: quota('codex') })),
+  gemini: vi.fn(async (_options: QuotaFetcherOptions) => ({ quota: quota('gemini') })),
+  copilot: vi.fn(async (_options: QuotaFetcherOptions) => ({ quota: quota('copilot') })),
+  antigravity: vi.fn(async (_options: QuotaFetcherOptions) => ({ quota: quota('antigravity') })),
+  kimi: vi.fn(async (_options: QuotaFetcherOptions) => ({ quota: quota('kimi') })),
+  zcode: vi.fn(async (_options: QuotaFetcherOptions) => ({ quota: quota('zcode') })),
+  grokbot: vi.fn(async (_options: QuotaFetcherOptions) => ({ quota: quota('grokbot') })),
 })
 
 describe('QuotaService', () => {
@@ -48,7 +50,7 @@ describe('QuotaService', () => {
       const gate = deferred<void>()
       const keychainReads: boolean[] = []
       const fetchers = noopFetchers()
-      fetchers.claude = vi.fn(async (options: { allowKeychain: boolean }) => {
+      fetchers.claude = vi.fn(async (options: QuotaFetcherOptions) => {
         keychainReads.push(options.allowKeychain)
         if (keychainReads.length === 1) await gate.promise
         return { quota: { ...quota('claude'), planLabel: options.allowKeychain ? 'Max 20x' : null } }

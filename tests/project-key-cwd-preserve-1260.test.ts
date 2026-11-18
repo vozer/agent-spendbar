@@ -260,28 +260,29 @@ describe('claude: JSONL cwd is canonical projectPath', () => {
   })
 })
 
+const kimicodeCwdFixtureHome = vi.hoisted(() => {
+  const base = process.env['TMPDIR'] || '/tmp'
+  return `${base.replace(/[\\/]+$/, '')}/kimicode-cwd-1260-${process.pid}-${Date.now()}`
+})
+
 describe('kimicode: state.json workDir becomes projectPath', () => {
-  const fixtureHome = vi.hoisted(() => {
-    const base = process.env['TMPDIR'] || '/tmp'
-    return `${base.replace(/[\\/]+$/, '')}/kimicode-cwd-1260-${process.pid}-${Date.now()}`
-  })
 
   beforeEach(async () => {
-    await rm(fixtureHome, { recursive: true, force: true })
-    await mkdir(fixtureHome, { recursive: true })
-    process.env['KIMI_CODE_HOME'] = fixtureHome
+    await rm(kimicodeCwdFixtureHome, { recursive: true, force: true })
+    await mkdir(kimicodeCwdFixtureHome, { recursive: true })
+    process.env['KIMI_CODE_HOME'] = kimicodeCwdFixtureHome
     clearSessionCache()
   })
   afterEach(async () => {
     clearSessionCache()
     delete process.env['KIMI_CODE_HOME']
-    await rm(fixtureHome, { recursive: true, force: true })
+    await rm(kimicodeCwdFixtureHome, { recursive: true, force: true })
   })
 
   it('preserves abs workDir through discovery and parse', async () => {
     const workDir = '/b/vault'
     const hash = createHash('md5').update(workDir).digest('hex').slice(0, 12)
-    const sessionDir = join(fixtureHome, 'sessions', `wd_vault_${hash}`, 'session_cwd1260')
+    const sessionDir = join(kimicodeCwdFixtureHome, 'sessions', `wd_vault_${hash}`, 'session_cwd1260')
     const agentDir = join(sessionDir, 'agents', 'main')
     await mkdir(agentDir, { recursive: true })
     await writeFile(join(sessionDir, 'state.json'), JSON.stringify({
@@ -311,7 +312,7 @@ describe('kimicode: state.json workDir becomes projectPath', () => {
       '',
     ].join('\n'))
 
-    const provider = createKimicodeProvider(fixtureHome)
+    const provider = createKimicodeProvider(kimicodeCwdFixtureHome)
     const sources = await provider.discoverSessions()
     expect(sources.length).toBeGreaterThanOrEqual(1)
     expect(sources.every(s => s.sourcePath === workDir || s.project === 'vault')).toBe(true)

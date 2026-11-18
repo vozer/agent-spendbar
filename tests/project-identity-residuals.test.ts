@@ -255,28 +255,29 @@ describe('claude residuals: two-root abs cwd via parseAllSessions', () => {
   })
 })
 
+const kimicodeResidualFixtureHome = vi.hoisted(() => {
+  const base = process.env['TMPDIR'] || '/tmp'
+  return `${base.replace(/[\\/]+$/, '')}/kimicode-r3res-${process.pid}-${Date.now()}`
+})
+
 describe('kimicode residuals: two-root cold/warm', () => {
-  const fixtureHome = vi.hoisted(() => {
-    const base = process.env['TMPDIR'] || '/tmp'
-    return `${base.replace(/[\\/]+$/, '')}/kimicode-r3res-${process.pid}-${Date.now()}`
-  })
 
   beforeEach(async () => {
-    await rm(fixtureHome, { recursive: true, force: true })
-    await mkdir(fixtureHome, { recursive: true })
-    process.env['KIMI_CODE_HOME'] = fixtureHome
+    await rm(kimicodeResidualFixtureHome, { recursive: true, force: true })
+    await mkdir(kimicodeResidualFixtureHome, { recursive: true })
+    process.env['KIMI_CODE_HOME'] = kimicodeResidualFixtureHome
     clearSessionCache()
   })
   afterEach(async () => {
     clearSessionCache()
     delete process.env['KIMI_CODE_HOME']
-    await rm(fixtureHome, { recursive: true, force: true })
+    await rm(kimicodeResidualFixtureHome, { recursive: true, force: true })
   })
 
   it('preserves both workDirs through cold/warm parse', async () => {
-    await writeKimicodeSession(fixtureHome, 'a')
-    await writeKimicodeSession(fixtureHome, 'b')
-    const provider = createKimicodeProvider(fixtureHome)
+    await writeKimicodeSession(kimicodeResidualFixtureHome, 'a')
+    await writeKimicodeSession(kimicodeResidualFixtureHome, 'b')
+    const provider = createKimicodeProvider(kimicodeResidualFixtureHome)
     const sources = await provider.discoverSessions()
     const cache = { version: CACHE_VERSION, providers: {} }
     const cold = await parseProviderSources('kimicode', sources, new Set(), cache)
