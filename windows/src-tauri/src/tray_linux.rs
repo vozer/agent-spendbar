@@ -120,7 +120,7 @@ fn decode_png(mut reader: png::Reader<&[u8]>) -> Vec<Icon> {
     // SNI expects ARGB32 in network byte order. PNG decoder gives RGBA8.
     let pixel_count = (width as usize) * (height as usize);
     let mut argb = Vec::with_capacity(pixel_count * 4);
-    for chunk in buf.chunks_exact(4) {
+    for chunk in buf.as_chunks::<4>().0 {
         let (r, g, b, a) = (chunk[0], chunk[1], chunk[2], chunk[3]);
         argb.extend_from_slice(&[a, r, g, b]);
     }
